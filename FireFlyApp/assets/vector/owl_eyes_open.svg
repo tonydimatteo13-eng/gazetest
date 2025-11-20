@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <style>
+      .white { fill: #fff7e6; }
+      .iris  { fill: #e2a04d; }
+      .pupil { fill: #2b2b2b; }
+    </style>
+  </defs>
+  <!-- Left eye -->
+  <circle class="white" cx="96" cy="118" r="24"/>
+  <circle class="iris"  cx="96" cy="118" r="14"/>
+  <circle class="pupil" cx="96" cy="118" r="7"/>
+  <circle cx="92" cy="112" r="3" fill="#ffffff"/>
+  <!-- Right eye -->
+  <circle class="white" cx="160" cy="118" r="24"/>
+  <circle class="iris"  cx="160" cy="118" r="14"/>
+  <circle class="pupil" cx="160" cy="118" r="7"/>
+  <circle cx="156" cy="112" r="3" fill="#ffffff"/>
+</svg>

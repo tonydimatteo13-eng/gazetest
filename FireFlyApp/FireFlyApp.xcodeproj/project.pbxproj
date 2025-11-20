@@ -1,0 +1,849 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 54;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0462750E2779233903B9CE95 /* score_typical.json in Resources */ = {isa = PBXBuildFile; fileRef = 9F383B8B0F57BCE786FB5113 /* score_typical.json */; };
+		04794D7859918C1BDE8C3818 /* CalibrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 730162D5663B86B3FB1DF491 /* CalibrationView.swift */; };
+		07FEFEA7B7E4210BB1F22D6D /* FireFlyScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 786146A6E1585CDDCB042C72 /* FireFlyScene.swift */; };
+		08457B9C7F2C5910BEF44462 /* TrialScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8892CBE39468C89B877C1BA4 /* TrialScheduler.swift */; };
+		0D62C925CD52B9B21F946E9C /* ARKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 599DE2BBEBDB6B3478E5CB8C /* ARKit.framework */; };
+		0ED94311BB90E99691A58219 /* CalibrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFC7C786C67355FEA8382CCB /* CalibrationTests.swift */; };
+		129C86A0A66796254B2C26E4 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A7B80FA045815409584CDC2 /* AboutView.swift */; };
+		15EFE47182F58309AD5A2F9C /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB9A5CB4C89A784AF20DC6F3 /* Models.swift */; };
+		274350988D9471163F99463F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CD2A35C5BBD0EBFC78AB1F30 /* Foundation.framework */; };
+		29551431AE286915E2B21719 /* GameConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 557E2A29CE833F5C4E89DE95 /* GameConfig.swift */; };
+		34652FCCEAABDA672E54BABF /* CalibrationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98205702F2F3443D1ADA167B /* CalibrationController.swift */; };
+		39D7CFE7CB07EC108AA1484F /* UploadQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8820FB69465A4CF8E7040DDE /* UploadQueue.swift */; };
+		3DC7EF03AD401871C0A1993B /* StopSignalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A52EFF2DBC3C9C59CD0B4F57 /* StopSignalTests.swift */; };
+		3ECD0D71A8E01B1EA726228E /* ScorerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E959404F12D817003E82A821 /* ScorerTests.swift */; };
+		3FC74EC6CC88AE3C928D9065 /* FireFlyCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 43CAF31820074F40EC54ABA3 /* FireFlyCore.framework */; };
+		41D831C8A0629927C27C176F /* FireFlyCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 43CAF31820074F40EC54ABA3 /* FireFlyCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		4199C8FF3422E2C1E3131580 /* AirtableConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FDB63C388E9D5362C18FD7E /* AirtableConfig.swift */; };
+		4489E8D51BA7094E925A51B1 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CD2A35C5BBD0EBFC78AB1F30 /* Foundation.framework */; };
+		4E904044FA99B51F7D61E894 /* AirtableClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26F41AD98095A024456E6CDF /* AirtableClient.swift */; };
+		5EFD5C5FD4ECD2DB13B9806A /* Statistics.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEF2DE825E307D3D61EBFE13 /* Statistics.swift */; };
+		6771ECCCE885D9FEB3A8010F /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 427C2C7DB6F8A49A55A6EBCC /* AppViewModel.swift */; };
+		6C88E797A855AA92340B94CB /* SpriteKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 168FAE8CD75BCA1E52095055 /* SpriteKit.framework */; };
+		70861828E1618AAF8AED7081 /* ExclusionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DC19CA700ADFF697A5AD58A /* ExclusionTests.swift */; };
+		745D0CB6BC1D5DDB3501FDF3 /* SessionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFDD26F9A255B036A19111CD /* SessionCoordinator.swift */; };
+		7606A76C230E5C74DD723549 /* ARKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 599DE2BBEBDB6B3478E5CB8C /* ARKit.framework */; };
+		78E7C5E90D8A81F4570FBE94 /* UploadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA3C67734FB12989E94D794B /* UploadManager.swift */; };
+		7DB067BF9A52DE15FAC0BEC7 /* TrialEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A1482549799C61B46541DF2 /* TrialEngine.swift */; };
+		80E15A5908469CBAA93D0ADF /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50FA3C4651B220EE23FC9EDF /* UIKit.framework */; };
+		8530BA572FD0B38F9C4DDAEF /* Calibrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1438B3C464B0C91029EC2998 /* Calibrator.swift */; };
+		89D43D5367FE1031E80F1590 /* ResultsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D38BC730DD97A148A506F792 /* ResultsView.swift */; };
+		935A58B4E78B9C611F212DF2 /* BaselineTimingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19A71C55788B1CF3C7922AD5 /* BaselineTimingTests.swift */; };
+		97F32E07DC4380AD8CD59E37 /* score_asdlike.json in Resources */ = {isa = PBXBuildFile; fileRef = ED8DAF56C1022391746A0043 /* score_asdlike.json */; };
+		9A1BDF5AE19BF80ECA077A2D /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50FA3C4651B220EE23FC9EDF /* UIKit.framework */; };
+		9B76DD8B1FFE720411B1E3B5 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48F014BD32A780F01A572033 /* WelcomeView.swift */; };
+		A8C274F82A563E02177EACB0 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CD2A35C5BBD0EBFC78AB1F30 /* Foundation.framework */; };
+		A9654DC49D8D6C74FE826B18 /* GazeTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F9E4B8E0E009AAB41FD8323 /* GazeTracker.swift */; };
+		B766A0548B1A484B2FB4724F /* SpriteKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 168FAE8CD75BCA1E52095055 /* SpriteKit.framework */; };
+		C412514398DF03474A366D88 /* GameContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56458D709EFDF1F1307C57D6 /* GameContainerView.swift */; };
+		CC6ECC86DC7199AA7CBAE74E /* UploadQueueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4020DF5F1FB4651F3676494A /* UploadQueueTests.swift */; };
+		CDBC08F74D9BC7170B23BE0B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DC33C4A368D6E9863147CE27 /* Assets.xcassets */; };
+		CE578C6F486D824EC5018F54 /* Scorer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F455534D69D6EED181A9247F /* Scorer.swift */; };
+		F0F432A1F435C4EE9A5FDC8D /* SaccadeDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22961355E6238C2DDF67E57F /* SaccadeDetector.swift */; };
+		F56ED55EA486A50837359E30 /* PrivacyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9564C5298BA167C4A72EB3EA /* PrivacyView.swift */; };
+		FE3B6C02DF26EEFF427A3FAC /* FireFlyAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DE0BB87A36AE235E8C68FA1 /* FireFlyAppApp.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		0E0507389D756473AA356A35 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7382BF9B9BCA8F3BBD265A7B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A35893EA7FC8F69054DBCF46;
+			remoteInfo = FireFlyCore;
+		};
+		4FB081A59CCD6A1A423B3E03 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7382BF9B9BCA8F3BBD265A7B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A35893EA7FC8F69054DBCF46;
+			remoteInfo = FireFlyCore;
+		};
+		A03B982C4850F18E6F894A0C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7382BF9B9BCA8F3BBD265A7B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 529A29867C1CAEBB4A7E6D62;
+			remoteInfo = FireFlyApp;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		3C0A345CA87243A38C1928F5A5720A1F /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				41D831C8A0629927C27C176F /* FireFlyCore.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		1438B3C464B0C91029EC2998 /* Calibrator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Calibrator.swift; sourceTree = "<group>"; };
+		168FAE8CD75BCA1E52095055 /* SpriteKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SpriteKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/SpriteKit.framework; sourceTree = DEVELOPER_DIR; };
+		19A71C55788B1CF3C7922AD5 /* BaselineTimingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BaselineTimingTests.swift; sourceTree = "<group>"; };
+		22961355E6238C2DDF67E57F /* SaccadeDetector.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SaccadeDetector.swift; sourceTree = "<group>"; };
+		26F41AD98095A024456E6CDF /* AirtableClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AirtableClient.swift; sourceTree = "<group>"; };
+		4020DF5F1FB4651F3676494A /* UploadQueueTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UploadQueueTests.swift; sourceTree = "<group>"; };
+		427C2C7DB6F8A49A55A6EBCC /* AppViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppViewModel.swift; sourceTree = "<group>"; };
+		43CAF31820074F40EC54ABA3 /* FireFlyCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = FireFlyCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		48F014BD32A780F01A572033 /* WelcomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
+		4A7B80FA045815409584CDC2 /* AboutView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
+		50FA3C4651B220EE23FC9EDF /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/UIKit.framework; sourceTree = DEVELOPER_DIR; };
+		557E2A29CE833F5C4E89DE95 /* GameConfig.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameConfig.swift; sourceTree = "<group>"; };
+		56458D709EFDF1F1307C57D6 /* GameContainerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameContainerView.swift; sourceTree = "<group>"; };
+		599DE2BBEBDB6B3478E5CB8C /* ARKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ARKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/ARKit.framework; sourceTree = DEVELOPER_DIR; };
+		6DE0BB87A36AE235E8C68FA1 /* FireFlyAppApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FireFlyAppApp.swift; sourceTree = "<group>"; };
+		730162D5663B86B3FB1DF491 /* CalibrationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CalibrationView.swift; sourceTree = "<group>"; };
+		75FC4048356B563F4D7407EE /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = Info.plist; path = FireFlyApp/Core/Info.plist; sourceTree = "<group>"; };
+		786146A6E1585CDDCB042C72 /* FireFlyScene.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FireFlyScene.swift; sourceTree = "<group>"; };
+		8820FB69465A4CF8E7040DDE /* UploadQueue.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UploadQueue.swift; sourceTree = "<group>"; };
+		8892CBE39468C89B877C1BA4 /* TrialScheduler.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TrialScheduler.swift; sourceTree = "<group>"; };
+		8A1482549799C61B46541DF2 /* TrialEngine.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TrialEngine.swift; sourceTree = "<group>"; };
+		8FDB63C388E9D5362C18FD7E /* AirtableConfig.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AirtableConfig.swift; sourceTree = "<group>"; };
+		9564C5298BA167C4A72EB3EA /* PrivacyView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PrivacyView.swift; sourceTree = "<group>"; };
+		98205702F2F3443D1ADA167B /* CalibrationController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CalibrationController.swift; sourceTree = "<group>"; };
+		9B803938A008B8F8669F693A /* PRD.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = PRD.md; sourceTree = "<group>"; };
+		9DC19CA700ADFF697A5AD58A /* ExclusionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExclusionTests.swift; sourceTree = "<group>"; };
+		9F383B8B0F57BCE786FB5113 /* score_typical.json */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json; name = score_typical.json; path = fixtures/score_typical.json; sourceTree = "<group>"; };
+		9F9E4B8E0E009AAB41FD8323 /* GazeTracker.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GazeTracker.swift; sourceTree = "<group>"; };
+		A52EFF2DBC3C9C59CD0B4F57 /* StopSignalTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StopSignalTests.swift; sourceTree = "<group>"; };
+		A9281118A73E467403D1CDC5 /* AGENTS.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = AGENTS.md; sourceTree = "<group>"; };
+		AEF2DE825E307D3D61EBFE13 /* Statistics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Statistics.swift; sourceTree = "<group>"; };
+		C414FA7AD39578B73AE0D780 /* FireFlyAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FireFlyAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C6B4C27AF74872A16E1161B8 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = Info.plist; path = Resources/Info.plist; sourceTree = "<group>"; };
+		CB9A5CB4C89A784AF20DC6F3 /* Models.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		CD2A35C5BBD0EBFC78AB1F30 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		CF0C70F81BEAC06EC1A09378 /* FireFlyApp-Debug.xcconfig.sample */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; name = "FireFlyApp-Debug.xcconfig.sample"; path = "FireFlyApp/Resources/FireFlyApp-Debug.xcconfig.sample"; sourceTree = "<group>"; };
+		CFC54C9D4D6752F8BFCB6B6C /* FireFlyApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FireFlyApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CFD91932CACF83B00BAF5B72 /* ASSETS.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = ASSETS.md; sourceTree = "<group>"; };
+		D38BC730DD97A148A506F792 /* ResultsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ResultsView.swift; sourceTree = "<group>"; };
+		DC33C4A368D6E9863147CE27 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		E959404F12D817003E82A821 /* ScorerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScorerTests.swift; sourceTree = "<group>"; };
+		ED8DAF56C1022391746A0043 /* score_asdlike.json */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json; name = score_asdlike.json; path = fixtures/score_asdlike.json; sourceTree = "<group>"; };
+		F455534D69D6EED181A9247F /* Scorer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Scorer.swift; sourceTree = "<group>"; };
+		FA3C67734FB12989E94D794B /* UploadManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UploadManager.swift; sourceTree = "<group>"; };
+		FE64F3C9E1F07518BABB3AC0 /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		FFC7C786C67355FEA8382CCB /* CalibrationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CalibrationTests.swift; sourceTree = "<group>"; };
+		FFDD26F9A255B036A19111CD /* SessionCoordinator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SessionCoordinator.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		1D5C3FC28BFB4747EF33A46F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4489E8D51BA7094E925A51B1 /* Foundation.framework in Frameworks */,
+				0D62C925CD52B9B21F946E9C /* ARKit.framework in Frameworks */,
+				B766A0548B1A484B2FB4724F /* SpriteKit.framework in Frameworks */,
+				9A1BDF5AE19BF80ECA077A2D /* UIKit.framework in Frameworks */,
+				3FC74EC6CC88AE3C928D9065 /* FireFlyCore.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		656392D353C050E0EE266278 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				274350988D9471163F99463F /* Foundation.framework in Frameworks */,
+				7606A76C230E5C74DD723549 /* ARKit.framework in Frameworks */,
+				6C88E797A855AA92340B94CB /* SpriteKit.framework in Frameworks */,
+				80E15A5908469CBAA93D0ADF /* UIKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C52606113FA676D491A08ECF /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A8C274F82A563E02177EACB0 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		2F8AE16A64E18210770271A9 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				6DE0BB87A36AE235E8C68FA1 /* FireFlyAppApp.swift */,
+				427C2C7DB6F8A49A55A6EBCC /* AppViewModel.swift */,
+				FFDD26F9A255B036A19111CD /* SessionCoordinator.swift */,
+				48F014BD32A780F01A572033 /* WelcomeView.swift */,
+				730162D5663B86B3FB1DF491 /* CalibrationView.swift */,
+				56458D709EFDF1F1307C57D6 /* GameContainerView.swift */,
+				D38BC730DD97A148A506F792 /* ResultsView.swift */,
+				9564C5298BA167C4A72EB3EA /* PrivacyView.swift */,
+				4A7B80FA045815409584CDC2 /* AboutView.swift */,
+				98205702F2F3443D1ADA167B /* CalibrationController.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		30700ED65115B5A9C3B7A8BA /* Game */ = {
+			isa = PBXGroup;
+			children = (
+				786146A6E1585CDDCB042C72 /* FireFlyScene.swift */,
+				557E2A29CE833F5C4E89DE95 /* GameConfig.swift */,
+				8A1482549799C61B46541DF2 /* TrialEngine.swift */,
+				8892CBE39468C89B877C1BA4 /* TrialScheduler.swift */,
+				22961355E6238C2DDF67E57F /* SaccadeDetector.swift */,
+			);
+			path = Game;
+			sourceTree = "<group>";
+		};
+		45BA25D2EB1C3EC52BFA6182 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				CD2A35C5BBD0EBFC78AB1F30 /* Foundation.framework */,
+				599DE2BBEBDB6B3478E5CB8C /* ARKit.framework */,
+				168FAE8CD75BCA1E52095055 /* SpriteKit.framework */,
+				50FA3C4651B220EE23FC9EDF /* UIKit.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
+		5287A3182A53B26B49757FD0 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				C6B4C27AF74872A16E1161B8 /* Info.plist */,
+				CF0C70F81BEAC06EC1A09378 /* FireFlyApp-Debug.xcconfig.sample */,
+				DC33C4A368D6E9863147CE27 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		587430EF2006305D632AF1F3 /* FireFlyApp */ = {
+			isa = PBXGroup;
+			children = (
+				2F8AE16A64E18210770271A9 /* App */,
+				30700ED65115B5A9C3B7A8BA /* Game */,
+				C8169D542A972D63989F8C8F /* Gaze */,
+				FA44648174817F829B716521 /* Scoring */,
+				EBE3C52BB4EBA1FB6FA81F8A /* Gateway */,
+			);
+			name = FireFlyApp;
+			sourceTree = "<group>";
+		};
+		704A73094A7FE0DDCFC80840 = {
+			isa = PBXGroup;
+			children = (
+				DA0BE9D9CFF4036F2A596D7A /* Products */,
+				D149BCC45A01556B7F8F839D /* Frameworks */,
+				587430EF2006305D632AF1F3 /* FireFlyApp */,
+				5287A3182A53B26B49757FD0 /* Resources */,
+				D485ADB7206AE281936F94D6 /* docs */,
+				B0FD60CC8F1FB754484F5FE0 /* Tests */,
+				FE64F3C9E1F07518BABB3AC0 /* README.md */,
+				FF4BD77B6D2C32B41D06069A /* Core */,
+			);
+			sourceTree = "<group>";
+		};
+		B0FD60CC8F1FB754484F5FE0 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				FFC7C786C67355FEA8382CCB /* CalibrationTests.swift */,
+				19A71C55788B1CF3C7922AD5 /* BaselineTimingTests.swift */,
+				A52EFF2DBC3C9C59CD0B4F57 /* StopSignalTests.swift */,
+				E959404F12D817003E82A821 /* ScorerTests.swift */,
+				9DC19CA700ADFF697A5AD58A /* ExclusionTests.swift */,
+				4020DF5F1FB4651F3676494A /* UploadQueueTests.swift */,
+				9F383B8B0F57BCE786FB5113 /* score_typical.json */,
+				ED8DAF56C1022391746A0043 /* score_asdlike.json */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		C8169D542A972D63989F8C8F /* Gaze */ = {
+			isa = PBXGroup;
+			children = (
+				9F9E4B8E0E009AAB41FD8323 /* GazeTracker.swift */,
+				1438B3C464B0C91029EC2998 /* Calibrator.swift */,
+			);
+			path = Gaze;
+			sourceTree = "<group>";
+		};
+		D149BCC45A01556B7F8F839D /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				45BA25D2EB1C3EC52BFA6182 /* iOS */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		D485ADB7206AE281936F94D6 /* docs */ = {
+			isa = PBXGroup;
+			children = (
+				9B803938A008B8F8669F693A /* PRD.md */,
+				A9281118A73E467403D1CDC5 /* AGENTS.md */,
+				CFD91932CACF83B00BAF5B72 /* ASSETS.md */,
+			);
+			path = docs;
+			sourceTree = "<group>";
+		};
+		DA0BE9D9CFF4036F2A596D7A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				CFC54C9D4D6752F8BFCB6B6C /* FireFlyApp.app */,
+				C414FA7AD39578B73AE0D780 /* FireFlyAppTests.xctest */,
+				43CAF31820074F40EC54ABA3 /* FireFlyCore.framework */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		EBE3C52BB4EBA1FB6FA81F8A /* Gateway */ = {
+			isa = PBXGroup;
+			children = (
+				8FDB63C388E9D5362C18FD7E /* AirtableConfig.swift */,
+				26F41AD98095A024456E6CDF /* AirtableClient.swift */,
+				8820FB69465A4CF8E7040DDE /* UploadQueue.swift */,
+				FA3C67734FB12989E94D794B /* UploadManager.swift */,
+			);
+			path = Gateway;
+			sourceTree = "<group>";
+		};
+		FA44648174817F829B716521 /* Scoring */ = {
+			isa = PBXGroup;
+			children = (
+				CB9A5CB4C89A784AF20DC6F3 /* Models.swift */,
+				F455534D69D6EED181A9247F /* Scorer.swift */,
+				AEF2DE825E307D3D61EBFE13 /* Statistics.swift */,
+			);
+			path = Scoring;
+			sourceTree = "<group>";
+		};
+		FF4BD77B6D2C32B41D06069A /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				75FC4048356B563F4D7407EE /* Info.plist */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		50F58510979CB5559BA1C6EC /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		529A29867C1CAEBB4A7E6D62 /* FireFlyApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C40FE3A8932E185ECDCA069A /* Build configuration list for PBXNativeTarget "FireFlyApp" */;
+			buildPhases = (
+				95D5E327FA0D61D5E05D21A4 /* Sources */,
+				1D5C3FC28BFB4747EF33A46F /* Frameworks */,
+				3C0A345CA87243A38C1928F5A5720A1F /* Embed Frameworks */,
+				4A6A8D8EF9AEB844A5026E3F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E80ECF3BC430B14BD75BF682 /* PBXTargetDependency */,
+			);
+			name = FireFlyApp;
+			productName = FireFlyApp;
+			productReference = CFC54C9D4D6752F8BFCB6B6C /* FireFlyApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+		5687CCE481C63D4BFDF1270F /* FireFlyAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 980B9DD62271990F9C2A91ED /* Build configuration list for PBXNativeTarget "FireFlyAppTests" */;
+			buildPhases = (
+				4D167444B14436743457EC37 /* Sources */,
+				C52606113FA676D491A08ECF /* Frameworks */,
+				4301E479AF0373FA299B955F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E4357D86CC42AEBDB73287F4 /* PBXTargetDependency */,
+				D91AEC254DB774F489641E8D /* PBXTargetDependency */,
+			);
+			name = FireFlyAppTests;
+			productName = FireFlyAppTests;
+			productReference = C414FA7AD39578B73AE0D780 /* FireFlyAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		A35893EA7FC8F69054DBCF46 /* FireFlyCore */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FE4846EC2B3DB407B15D7CAE /* Build configuration list for PBXNativeTarget "FireFlyCore" */;
+			buildPhases = (
+				50F58510979CB5559BA1C6EC /* Headers */,
+				C46086C5953F394158030F04 /* Sources */,
+				656392D353C050E0EE266278 /* Frameworks */,
+				E877E4FF69A34B2073346921 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FireFlyCore;
+			productName = FireFlyCore;
+			productReference = 43CAF31820074F40EC54ABA3 /* FireFlyCore.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		7382BF9B9BCA8F3BBD265A7B /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 2610;
+				OrganizationName = FireFly;
+				TargetAttributes = {
+					5687CCE481C63D4BFDF1270F = {
+						TestTargetID = 529A29867C1CAEBB4A7E6D62;
+					};
+					A35893EA7FC8F69054DBCF46 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = C9D0CA1718A303693D8E3315 /* Build configuration list for PBXProject "FireFlyApp" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 704A73094A7FE0DDCFC80840;
+			productRefGroup = DA0BE9D9CFF4036F2A596D7A /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				529A29867C1CAEBB4A7E6D62 /* FireFlyApp */,
+				5687CCE481C63D4BFDF1270F /* FireFlyAppTests */,
+				A35893EA7FC8F69054DBCF46 /* FireFlyCore */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		4301E479AF0373FA299B955F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0462750E2779233903B9CE95 /* score_typical.json in Resources */,
+				97F32E07DC4380AD8CD59E37 /* score_asdlike.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4A6A8D8EF9AEB844A5026E3F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CDBC08F74D9BC7170B23BE0B /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E877E4FF69A34B2073346921 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		4D167444B14436743457EC37 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0ED94311BB90E99691A58219 /* CalibrationTests.swift in Sources */,
+				935A58B4E78B9C611F212DF2 /* BaselineTimingTests.swift in Sources */,
+				3DC7EF03AD401871C0A1993B /* StopSignalTests.swift in Sources */,
+				3ECD0D71A8E01B1EA726228E /* ScorerTests.swift in Sources */,
+				70861828E1618AAF8AED7081 /* ExclusionTests.swift in Sources */,
+				CC6ECC86DC7199AA7CBAE74E /* UploadQueueTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		95D5E327FA0D61D5E05D21A4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FE3B6C02DF26EEFF427A3FAC /* FireFlyAppApp.swift in Sources */,
+				6771ECCCE885D9FEB3A8010F /* AppViewModel.swift in Sources */,
+				745D0CB6BC1D5DDB3501FDF3 /* SessionCoordinator.swift in Sources */,
+				9B76DD8B1FFE720411B1E3B5 /* WelcomeView.swift in Sources */,
+				04794D7859918C1BDE8C3818 /* CalibrationView.swift in Sources */,
+				C412514398DF03474A366D88 /* GameContainerView.swift in Sources */,
+				89D43D5367FE1031E80F1590 /* ResultsView.swift in Sources */,
+				F56ED55EA486A50837359E30 /* PrivacyView.swift in Sources */,
+				129C86A0A66796254B2C26E4 /* AboutView.swift in Sources */,
+				34652FCCEAABDA672E54BABF /* CalibrationController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C46086C5953F394158030F04 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				07FEFEA7B7E4210BB1F22D6D /* FireFlyScene.swift in Sources */,
+				29551431AE286915E2B21719 /* GameConfig.swift in Sources */,
+				7DB067BF9A52DE15FAC0BEC7 /* TrialEngine.swift in Sources */,
+				08457B9C7F2C5910BEF44462 /* TrialScheduler.swift in Sources */,
+				F0F432A1F435C4EE9A5FDC8D /* SaccadeDetector.swift in Sources */,
+				A9654DC49D8D6C74FE826B18 /* GazeTracker.swift in Sources */,
+				8530BA572FD0B38F9C4DDAEF /* Calibrator.swift in Sources */,
+				15EFE47182F58309AD5A2F9C /* Models.swift in Sources */,
+				CE578C6F486D824EC5018F54 /* Scorer.swift in Sources */,
+				5EFD5C5FD4ECD2DB13B9806A /* Statistics.swift in Sources */,
+				4199C8FF3422E2C1E3131580 /* AirtableConfig.swift in Sources */,
+				4E904044FA99B51F7D61E894 /* AirtableClient.swift in Sources */,
+				39D7CFE7CB07EC108AA1484F /* UploadQueue.swift in Sources */,
+				78E7C5E90D8A81F4570FBE94 /* UploadManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D91AEC254DB774F489641E8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = FireFlyCore;
+			target = A35893EA7FC8F69054DBCF46 /* FireFlyCore */;
+			targetProxy = 0E0507389D756473AA356A35 /* PBXContainerItemProxy */;
+		};
+		E4357D86CC42AEBDB73287F4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = FireFlyApp;
+			target = 529A29867C1CAEBB4A7E6D62 /* FireFlyApp */;
+			targetProxy = A03B982C4850F18E6F894A0C /* PBXContainerItemProxy */;
+		};
+		E80ECF3BC430B14BD75BF682 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = FireFlyCore;
+			target = A35893EA7FC8F69054DBCF46 /* FireFlyCore */;
+			targetProxy = 4FB081A59CCD6A1A423B3E03 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1386C888297483BE9E568E36 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = QDTHHGPVC6;
+				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.FireFlyApp1;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		208F4A6898AFEC8C600AF3C9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_MODULE_VERIFIER = YES;
+				INFOPLIST_FILE = Core/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu11 gnu++14";
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.FireFlyCore;
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = NO;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Debug;
+		};
+		285E315F623C244FCF37E55F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_MODULE_VERIFIER = YES;
+				INFOPLIST_FILE = Core/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu11 gnu++14";
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.FireFlyCore;
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = NO;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Release;
+		};
+		2EA2750D4A7905CC17635272 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		625107EF2BA812BCA1453E4B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				INFOPLIST_FILE = Tests/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.FireFlyAppTests;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = TESTMODE;
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		6429C0AB5D2932FB3DEE5048 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				INFOPLIST_FILE = Tests/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.FireFlyAppTests;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = TESTMODE;
+				SWIFT_VERSION = 5.9;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		7568D11823D283E4C5F7AD2C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = QDTHHGPVC6;
+				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.FireFlyApp1;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		FB9E12990814A3CD84525515 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		980B9DD62271990F9C2A91ED /* Build configuration list for PBXNativeTarget "FireFlyAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6429C0AB5D2932FB3DEE5048 /* Release */,
+				625107EF2BA812BCA1453E4B /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C40FE3A8932E185ECDCA069A /* Build configuration list for PBXNativeTarget "FireFlyApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7568D11823D283E4C5F7AD2C /* Release */,
+				1386C888297483BE9E568E36 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C9D0CA1718A303693D8E3315 /* Build configuration list for PBXProject "FireFlyApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2EA2750D4A7905CC17635272 /* Debug */,
+				FB9E12990814A3CD84525515 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FE4846EC2B3DB407B15D7CAE /* Build configuration list for PBXNativeTarget "FireFlyCore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				285E315F623C244FCF37E55F /* Release */,
+				208F4A6898AFEC8C600AF3C9 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 7382BF9B9BCA8F3BBD265A7B /* Project object */;
+}

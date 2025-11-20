@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <style>
+      .abdomen { fill: #f7c948; }
+      .thorax { fill: "#f1b132"; }
+      .head   { fill: "#e39f2b"; }
+      .wing   { fill: "#ffffff"; opacity: 0.75; }
+      .stroke { stroke: "#e6cf8a"; stroke-width: 2; fill: none; }
+    </style>
+  </defs>
+  <!-- abdomen -->
+  <ellipse class="abdomen" cx="132" cy="128" rx="32" ry="26"/>
+  <ellipse cx="142" cy="128" rx="8" ry="6" fill="#fff2a6" opacity="0.6"/>
+  <!-- thorax -->
+  <ellipse class="thorax" cx="108" cy="126" rx="16" ry="14"/>
+  <!-- head -->
+  <circle class="head" cx="92" cy="124" r="9"/>
+  <!-- antennae -->
+  <path class="stroke" d="M86,118 C78,108 82,104 88,112"/>
+  <path class="stroke" d="M98,118 C106,108 102,104 96,112"/>
+  <!-- wings -->
+  <ellipse class="wing" cx="112" cy="110" rx="18" ry="10"/>
+  <ellipse class="wing" cx="112" cy="142" rx="18" ry="10"/>
+</svg>

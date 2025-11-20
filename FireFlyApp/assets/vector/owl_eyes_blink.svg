@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs><style>.lid{fill:#8b5e3c;}</style></defs>
+  <path class="lid" d="M72,118 Q96,108 120,118 Q96,122 72,118 Z"/>
+  <path class="lid" d="M136,118 Q160,108 184,118 Q160,122 136,118 Z"/>
+</svg>

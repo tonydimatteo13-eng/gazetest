@@ -1,0 +1,508 @@
+import SpriteKit
+import ARKit
+import UIKit
+import simd
+
+public final class FireFlyScene: SKScene {
+    public enum State { case calibrate, fixate, go, stop, feedback, iti }
+
+    public var onTrialFinished: ((Trial) -> Void)?
+
+    private var config: GameConfig = .production
+    private var calibrator: Calibrator = Calibrator()
+    private var gazeTracker: GazeTracker = GazeTracker()
+    private let engine = TrialEngine()
+    private var detector: SaccadeDetector = SaccadeDetector(anticipationThresholdMs: 100)
+
+    private var state: State = .calibrate
+    private var baselineMode = true
+    private var scheduledTrial: ScheduledTrial?
+    private var goStartTime: TimeInterval?
+    private var stopSignalTime: TimeInterval?
+    private var fixationStartSample: TimeInterval?
+    private var fixationStreak = 0
+    private var trialCompleted = false
+    private var gazeSamples: [AngleSample] = []
+    private var distanceSamples: [Double] = []
+    private var headMotionFlag = false
+    private var lostTrackingFlag = false
+    private var itiRng: SeededGenerator = SeededGenerator(seed: 0xF1F2F3F4)
+    private var visibleHalfWidth: CGFloat = 0
+    private var gazeCenterCalibrated = false
+    private var centerHorizontalRad: Double = 0
+    private var centerVerticalRad: Double = 0
+    private var centerAccumHorizontalRad: Double = 0
+    private var centerAccumVerticalRad: Double = 0
+    private var centerSampleCount: Int = 0
+
+    // Nodes
+    private let rootNode = SKNode()
+    private let backgroundNode = SKNode()
+    private let fireflyNode = SKSpriteNode(imageNamed: "firefly_idle")
+    private let stopNode = SKSpriteNode(imageNamed: "stop_sign")
+    private let feedbackNode = SKSpriteNode()
+    private let owlNode = SKSpriteNode(imageNamed: "owl_body")
+    private let owlEyesOpen = SKSpriteNode(imageNamed: "owl_eyes_open")
+    private let owlEyesBlink = SKSpriteNode(imageNamed: "owl_eyes_blink")
+
+    private let pixelsPerDegree: Double = 109.0
+
+    public override func didMove(to view: SKView) {
+        super.didMove(to: view)
+        anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        setupScene()
+        // Compute the horizontally visible portion of the scene given the
+        // SpriteKit view's aspect ratio. On tall iPhones, the scene is cropped
+        // horizontally when aspectFill is used, so we must keep targets inside
+        // the actually visible half‑width.
+        let viewSize = view.bounds.size
+        let viewAspect = viewSize.width / max(viewSize.height, 1)
+        let sceneAspect = size.width / max(size.height, 1)
+        if viewAspect < sceneAspect {
+            // Cropped horizontally: visible world width is limited by view width.
+            visibleHalfWidth = (size.height * viewAspect) / 2.0
+        } else {
+            visibleHalfWidth = size.width / 2.0
+        }
+        if visibleHalfWidth <= 0 {
+            visibleHalfWidth = size.width / 2.0
+        }
+        print("[Scene] didMove – sceneSize=\(size) viewSize=\(viewSize) visibleHalfWidth=\(visibleHalfWidth)")
+    }
+
+    public func configure(with config: GameConfig, calibrator: Calibrator, gaze: GazeTracker) {
+        self.config = config
+        self.calibrator = calibrator
+        self.gazeTracker = gaze
+        self.detector = SaccadeDetector(anticipationThresholdMs: config.anticipationThresholdMs)
+        itiRng = SeededGenerator(seed: config.rngSeed ^ 0xA5A5A5A5)
+        gazeTracker.onSample = { [weak self] sample, ray, _ in
+            self?.handle(sample: sample, ray: ray)
+        }
+        print("[FireFlyScene] Configured with gaze tracker")
+    }
+
+    public func startBaseline() {
+        baselineMode = true
+        print("[Scene] startBaseline() – resetting engine and scheduling baseline trials")
+        engine.reset()
+        gazeCenterCalibrated = false
+        centerHorizontalRad = 0
+        centerVerticalRad = 0
+        centerAccumHorizontalRad = 0
+        centerAccumVerticalRad = 0
+        centerSampleCount = 0
+        advanceToNextTrial()
+    }
+
+    public func startSST() {
+        baselineMode = false
+        print("[Scene] startSST() – advancing to SST trials")
+        advanceToNextTrial()
+    }
+
+    public override func update(_ currentTime: TimeInterval) {
+        super.update(currentTime)
+        guard let trial = scheduledTrial, let goTime = goStartTime else { return }
+        switch state {
+        case .go:
+            updateStopStateIfNeeded(currentTime: currentTime, trial: trial)
+            evaluateTimeout(currentTime: currentTime, goTime: goTime, trial: trial)
+        case .stop:
+            evaluateTimeout(currentTime: currentTime, goTime: goTime, trial: trial)
+        default:
+            break
+        }
+    }
+}
+
+// MARK: - Scene wiring
+private extension FireFlyScene {
+    func setupScene() {
+        addChild(rootNode)
+        rootNode.addChild(backgroundNode)
+        addBackground()
+
+        fireflyNode.isHidden = true
+        fireflyNode.zPosition = 10
+        rootNode.addChild(fireflyNode)
+        fireflyNode.run(SKAction.repeatForever(glowAnimation()))
+
+        stopNode.isHidden = true
+        stopNode.zPosition = 20
+        rootNode.addChild(stopNode)
+
+        feedbackNode.isHidden = true
+        feedbackNode.zPosition = 25
+        rootNode.addChild(feedbackNode)
+
+        owlNode.zPosition = 5
+        rootNode.addChild(owlNode)
+        owlEyesOpen.position = .zero
+        owlEyesBlink.position = .zero
+        owlEyesBlink.isHidden = true
+        owlNode.addChild(owlEyesOpen)
+        owlNode.addChild(owlEyesBlink)
+
+        let blink = SKAction.sequence([
+            SKAction.wait(forDuration: 2.5, withRange: 1.5),
+            SKAction.run { [weak self] in self?.blink() }
+        ])
+        owlNode.run(SKAction.repeatForever(blink))
+    }
+
+    func addBackground() {
+        let layers = [
+            ("bg_sky", -50.0),
+            ("bg_trees_back", -40.0),
+            ("bg_trees_mid", -30.0),
+            ("bg_trees_front", -20.0),
+            ("bg_ground", -10.0)
+        ]
+        for (name, z) in layers {
+            let node = SKSpriteNode(imageNamed: name)
+            node.zPosition = z
+            node.position = .zero
+            backgroundNode.addChild(node)
+        }
+    }
+
+    func glowAnimation() -> SKAction {
+        let frames = ["firefly_idle", "firefly_glow_1", "firefly_glow_2", "firefly_glow_3"].map { SKTexture(imageNamed: $0) }
+        return SKAction.sequence([
+            SKAction.animate(with: frames, timePerFrame: 0.35, resize: false, restore: false),
+            SKAction.animate(with: frames.reversed(), timePerFrame: 0.35, resize: false, restore: false)
+        ])
+    }
+
+    func blink() {
+        owlEyesOpen.isHidden = true
+        owlEyesBlink.isHidden = false
+        owlEyesBlink.run(SKAction.wait(forDuration: 0.15)) { [weak self] in
+            self?.owlEyesOpen.isHidden = false
+            self?.owlEyesBlink.isHidden = true
+        }
+    }
+}
+
+// MARK: - Samples and state
+private extension FireFlyScene {
+    func handle(sample: GazeTracker.Sample, ray: simd_double3) {
+        print("[Scene] handling sample t=\(sample.t) state=\(state) scheduled=\(scheduledTrial != nil) completed=\(trialCompleted)")
+        guard let trial = scheduledTrial, !trialCompleted else {
+            print("[Scene] no scheduled trial (state=\(state))")
+            return
+        }
+        // Derive gaze angles directly from the ARKit gaze ray, and apply
+        // a per-session center offset so that "looking at the owl" maps to
+        // approximately (0°,0°) even if the absolute ray is biased.
+        let rawHorizontalRad = atan2(ray.x, ray.z)
+        let rawVerticalRad = atan2(ray.y, ray.z)
+
+        if state == .fixate && baselineMode && !gazeCenterCalibrated {
+            centerAccumHorizontalRad += rawHorizontalRad
+            centerAccumVerticalRad += rawVerticalRad
+            centerSampleCount += 1
+            let needed = 20
+            if centerSampleCount >= needed {
+                centerHorizontalRad = centerAccumHorizontalRad / Double(centerSampleCount)
+                centerVerticalRad = centerAccumVerticalRad / Double(centerSampleCount)
+                gazeCenterCalibrated = true
+                fixationStartSample = nil
+                fixationStreak = 0
+                let hDeg = centerHorizontalRad * 180.0 / .pi
+                let vDeg = centerVerticalRad * 180.0 / .pi
+                print("[Scene] calibrated gaze center offset h=\(String(format: "%.2f", hDeg))° v=\(String(format: "%.2f", vDeg))° from \(centerSampleCount) samples")
+            }
+        }
+
+        let horizontalRad: Double
+        let verticalRad: Double
+        if gazeCenterCalibrated {
+            horizontalRad = rawHorizontalRad - centerHorizontalRad
+            verticalRad = rawVerticalRad - centerVerticalRad
+        } else {
+            horizontalRad = rawHorizontalRad
+            verticalRad = rawVerticalRad
+        }
+        let horizontalDeg = horizontalRad * 180.0 / .pi
+        let verticalDeg = verticalRad * 180.0 / .pi
+        let angleSample = AngleSample(timestamp: sample.t, horizontalDeg: horizontalDeg, verticalDeg: verticalDeg)
+
+        switch state {
+        case .fixate:
+            processFixation(sample: angleSample)
+        case .go, .stop:
+            gazeSamples.append(angleSample)
+            distanceSamples.append(sample.distanceCm)
+            monitorHeadMotion()
+            evaluateSaccade(for: trial, goTime: goStartTime ?? sample.t)
+        default:
+            print("[Scene] ignoring sample (state=\(state))")
+            break
+        }
+    }
+
+    func processFixation(sample: AngleSample) {
+        let radius = hypot(sample.horizontalDeg, sample.verticalDeg)
+        print("[Fixation candidate] radius=\(String(format: "%.2f", radius))° state=\(state)")
+        let effectiveRadiusDeg = config.fixationRadiusDeg
+        if radius <= effectiveRadiusDeg {
+            fixationStreak += 1
+            if fixationStartSample == nil {
+                fixationStartSample = sample.timestamp
+            }
+            let durationMs = (sample.timestamp - (fixationStartSample ?? sample.timestamp)) * 1000.0
+            let minSamplesForTime = Int(ceil(config.samplingRateHz * 0.5))
+            let requiredSamples = max(config.fixationSamplesRequired, minSamplesForTime)
+            print(String(
+                format: "[Fixation] radius=%.2f°, window=%.2f°, streak=%d, durationMs=%d, requiredSamples=%d",
+                radius,
+                effectiveRadiusDeg,
+                fixationStreak,
+                Int(durationMs),
+                requiredSamples
+            ))
+            if fixationStreak >= requiredSamples && durationMs >= 500.0 {
+                beginGoPhase(at: sample.timestamp)
+            }
+        } else {
+            if fixationStreak > 0 {
+                print("[Fixation reset] radius=\(String(format: "%.2f", radius))°")
+            }
+            fixationStreak = 0
+            fixationStartSample = nil
+        }
+    }
+
+    func beginGoPhase(at timestamp: TimeInterval) {
+        guard let trial = scheduledTrial else {
+            print("[Scene] beginGoPhase() called with no scheduled trial")
+            return
+        }
+        print("[Scene] beginGoPhase() – transitioning to .go at t=\(timestamp) for trial index=\(trial.index) block=\(trial.block) type=\(trial.type) dir=\(trial.direction)")
+        state = .go
+        trialCompleted = false
+        goStartTime = timestamp
+        stopSignalTime = trial.ssdMs.map { timestamp + Double($0) / 1000.0 }
+        gazeSamples.removeAll(keepingCapacity: true)
+        distanceSamples.removeAll(keepingCapacity: true)
+        headMotionFlag = false
+        lostTrackingFlag = false
+        presentStimulus(for: trial)
+    }
+
+    func presentStimulus(for trial: ScheduledTrial) {
+        let targetDeg = trial.direction == .left ? -config.targetEccentricityDeg : config.targetEccentricityDeg
+        // Map desired eccentricity in degrees into scene coordinates. We scale so that the
+        // target lies comfortably within the horizontally visible portion of the scene,
+        // even when the SpriteKit view crops the sides on tall iPhones.
+        let halfWidth = visibleHalfWidth > 0 ? visibleHalfWidth : size.width / 2.0
+        let maxOffset = halfWidth * 0.8
+        let unitsPerDegree = maxOffset / CGFloat(config.targetEccentricityDeg)
+        let offset = CGFloat(targetDeg) * unitsPerDegree
+        print("[Scene] presentStimulus() – targetDeg=\(targetDeg) offset=\(offset) sceneWidth=\(size.width) visibleHalfWidth=\(halfWidth)")
+        fireflyNode.position = CGPoint(x: offset, y: 0)
+        fireflyNode.setScale(0.9)
+        fireflyNode.alpha = 0
+        fireflyNode.isHidden = false
+        owlNode.isHidden = true
+        let appear = SKAction.group([
+            SKAction.fadeIn(withDuration: 0.12),
+            SKAction.scale(to: 1.0, duration: 0.12).easeOut()
+        ])
+        fireflyNode.run(appear)
+        stopNode.isHidden = true
+        feedbackNode.isHidden = true
+    }
+
+    func updateStopStateIfNeeded(currentTime: TimeInterval, trial: ScheduledTrial) {
+        guard trial.type == .stop, let stopTime = stopSignalTime, currentTime >= stopTime else { return }
+        state = .stop
+        showStopSignal()
+    }
+
+    func showStopSignal() {
+        stopNode.isHidden = false
+        stopNode.alpha = 0
+        stopNode.setScale(0.9)
+        let appear = SKAction.group([
+            SKAction.fadeIn(withDuration: 0.12),
+            SKAction.scale(to: 1.0, duration: 0.12).easeOut()
+        ])
+        stopNode.run(appear)
+    }
+
+    func evaluateSaccade(for trial: ScheduledTrial, goTime: TimeInterval) {
+        let outcome = detector.evaluate(samples: gazeSamples, goTime: goTime, direction: trial.direction)
+        guard let rt = outcome.reactionTimeMs else { return }
+        if trial.type == .go {
+            concludeTrial(reason: .completion(outcome))
+        } else {
+            if let ssd = trial.ssdMs, rt >= ssd {
+                concludeTrial(reason: .completion(outcome))
+            } else {
+                concludeTrial(reason: .completion(outcome))
+            }
+        }
+    }
+
+    func evaluateTimeout(currentTime: TimeInterval, goTime: TimeInterval, trial: ScheduledTrial) {
+        let elapsed = (currentTime - goTime) * 1000.0
+        if Int(elapsed) >= config.goTimeoutMs {
+            concludeTrial(reason: .timeout)
+        }
+    }
+
+    func monitorHeadMotion() {
+        guard let first = distanceSamples.first, let last = distanceSamples.last else { return }
+        if abs(last - first) > 3.0 {
+            headMotionFlag = true
+        }
+        if distanceSamples.count >= 2 {
+            let maxDistance = distanceSamples.max() ?? last
+            let minDistance = distanceSamples.min() ?? first
+            if maxDistance - minDistance > 5.0 {
+                headMotionFlag = true
+            }
+        }
+    }
+}
+
+// MARK: - Trial completion
+private extension FireFlyScene {
+    func advanceToNextTrial() {
+        let modeLabel = baselineMode ? "baseline" : "sst"
+        scheduledTrial = baselineMode ? engine.nextBaselineTrial() : engine.nextSSTTrial()
+        if let trial = scheduledTrial {
+            print("[Scene] advanceToNextTrial() – mode=\(modeLabel) index=\(trial.index) block=\(trial.block) type=\(trial.type) dir=\(trial.direction)")
+        } else {
+            print("[Scene] advanceToNextTrial() – mode=\(modeLabel) yielded nil (no more trials)")
+        }
+        goStartTime = nil
+        stopSignalTime = nil
+        fixationStartSample = nil
+        fixationStreak = 0
+        trialCompleted = false
+        gazeSamples.removeAll(keepingCapacity: true)
+        distanceSamples.removeAll(keepingCapacity: true)
+        fireflyNode.isHidden = true
+        stopNode.isHidden = true
+        feedbackNode.isHidden = true
+        owlNode.isHidden = false
+        if scheduledTrial == nil {
+            state = .calibrate
+            print("[Scene] state set to .calibrate (no scheduled trial)")
+        } else {
+            state = .fixate
+            print("[Scene] state set to .fixate – waiting for fixation")
+        }
+    }
+
+    func concludeTrial(reason: TrialEndReason) {
+        guard !trialCompleted, let trial = scheduledTrial, let goTime = goStartTime else { return }
+        trialCompleted = true
+        let outcome: SaccadeOutcome
+        switch reason {
+        case .completion(let provided):
+            outcome = provided
+        case .timeout:
+            outcome = detector.evaluate(samples: gazeSamples, goTime: goTime, direction: trial.direction)
+        }
+
+        let averageDistance = distanceSamples.isEmpty ? 60.0 : distanceSamples.reduce(0, +) / Double(distanceSamples.count)
+        let rmse = computeRMSE(for: trial)
+        let metrics = makeMetrics(trial: trial, outcome: outcome, rmse: rmse, averageDistance: averageDistance, reason: reason)
+        let recorded = engine.record(trial: trial, metrics: metrics)
+        onTrialFinished?(recorded)
+        updateFeedback(for: trial, outcome: outcome, reason: reason)
+        cleanupAfterTrial()
+    }
+
+    func computeRMSE(for trial: ScheduledTrial) -> Double {
+        guard !gazeSamples.isEmpty else { return 0 }
+        let targetDeg = trial.type == .go ? (trial.direction == .left ? -config.targetEccentricityDeg : config.targetEccentricityDeg) : 0.0
+        let mse = gazeSamples.reduce(0.0) { partial, sample in
+            let error = sample.horizontalDeg - targetDeg
+            return partial + error * error
+        } / Double(gazeSamples.count)
+        return sqrt(mse)
+    }
+
+    func makeMetrics(trial: ScheduledTrial, outcome: SaccadeOutcome, rmse: Double, averageDistance: Double, reason: TrialEndReason) -> TrialMetricsInput {
+        var goSuccess = trial.type == .go && outcome.enteredCorridor
+        var stopSuccess = trial.type == .stop && !outcome.enteredCorridor
+        var rt = outcome.reactionTimeMs
+        if trial.type == .stop {
+            goSuccess = false
+        }
+        if case .timeout = reason {
+            goSuccess = false
+            stopSuccess = trial.type == .stop && !outcome.enteredCorridor
+            rt = nil
+        }
+
+        return TrialMetricsInput(
+            goOnsetMs: 0,
+            rtMs: rt,
+            goSuccess: goSuccess,
+            stopSuccess: stopSuccess,
+            gazeRMSEDeg: rmse,
+            viewingDistanceCm: averageDistance,
+            headMotionFlag: headMotionFlag,
+            lostTrackingFlag: lostTrackingFlag
+        )
+    }
+
+    func updateFeedback(for trial: ScheduledTrial, outcome: SaccadeOutcome, reason: TrialEndReason) {
+        fireflyNode.isHidden = true
+        if trial.type == .go {
+            if case .timeout = reason {
+                feedbackNode.texture = SKTexture(imageNamed: "faster_text")
+                feedbackNode.isHidden = false
+            } else {
+                feedbackNode.isHidden = true
+            }
+        } else {
+            if outcome.enteredCorridor {
+                feedbackNode.texture = SKTexture(imageNamed: "red_x")
+                feedbackNode.isHidden = false
+            } else {
+                feedbackNode.isHidden = true
+            }
+        }
+    }
+
+    func cleanupAfterTrial() {
+        state = .feedback
+        run(SKAction.wait(forDuration: 0.6)) { [weak self] in
+            guard let self else { return }
+            self.state = .iti
+            self.run(SKAction.wait(forDuration: self.randomITI())) { [weak self] in
+                self?.advanceToNextTrial()
+            }
+        }
+    }
+
+    func randomITI() -> TimeInterval {
+        let min = Double(config.itiRangeMs.lowerBound)
+        let max = Double(config.itiRangeMs.upperBound)
+        let roll = Double(itiRng.next()) / Double(UInt64.max)
+        return (min + (max - min) * roll) / 1000.0
+    }
+}
+
+private enum TrialEndReason {
+    case completion(SaccadeOutcome)
+    case timeout
+}
+
+private extension SKAction {
+    func easeOut() -> SKAction {
+        timingFunction = { t in
+            let inv = t - 1
+            return inv * inv * inv + 1
+        }
+        return self
+    }
+}

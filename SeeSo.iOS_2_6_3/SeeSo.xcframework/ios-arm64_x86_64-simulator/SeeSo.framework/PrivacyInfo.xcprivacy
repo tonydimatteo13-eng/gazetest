@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeDeviceID</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeOther</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSPrivacyAccessedAPITypes</key>
+    <array>
+      <dict>
+        <key>NSPrivacyAccessedAPIType</key>
+        <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+        <key>NSPrivacyAccessedAPITypeReasons</key>
+        <array>
+          <string>C56D.1</string>
+        </array>
+        <key>NSPrivacyAccessedAPITypeDescription</key>
+        <string>Our SDK utilizes NSUserDefaults to store and retrieve data necessary for operation, such as UUID for usage measurement and camera-related information for enhancing app functionalities. This process is fully encapsulated within our SDK and is triggered internally without direct interaction from the app developers. The data accessed and stored by our SDK is used exclusively for the purposes of providing and improving the SDK's features and is not shared externally or used for tracking purposes.</string>
+      </dict>
+      <dict>
+        <key>NSPrivacyAccessedAPIType</key>
+        <string>NSPrivacyAccessedAPICategorySystemBootTime</string>
+        <key>NSPrivacyAccessedAPITypeReasons</key>
+        <array>
+          <string>35F9.1</string>
+          <string>8FFB.1</string>
+        </array>
+        <key>NSPrivacyAccessedAPITypeDescription</key>
+        <string>Our SDK accesses system boot time information to enhance performance analytics and improve app stability by understanding device states. This access is limited to system boot time data and does not involve personal or sensitive user data. The reasons 35F9.1 and 8FFB.1 reflect our use of this information for internal diagnostics and optimization purposes without any external sharing or tracking.</string>
+      </dict>
+      <dict>
+        <key>NSPrivacyAccessedAPIType</key>
+        <string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+        <key>NSPrivacyAccessedAPITypeReasons</key>
+        <array>
+          <string>3B52.1</string>
+        </array>
+        <key>NSPrivacyAccessedAPITypeDescription</key>
+        <string>Using OpenSSL library</string>
+      </dict>
+    </array>
+</dict>
+</plist>

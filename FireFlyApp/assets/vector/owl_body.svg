@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <style>
+      .body { fill: #cda46d; }
+      .belly { fill: #d9b681; }
+      .wing  { fill: #8b5e3c; }
+      .foot  { fill: #f6a623; }
+      .beak  { fill: #e67e22; }
+    </style>
+  </defs>
+  <!-- Head -->
+  <path class="body" d="M64,88 Q128,24 192,88 Q198,116 192,132 Q176,168 128,168 Q80,168 64,132 Q58,116 64,88 Z"/>
+  <!-- Ear tufts -->
+  <path class="body" d="M76,86 Q80,64 92,60 Q88,76 92,86 Z"/>
+  <path class="body" d="M180,86 Q176,64 164,60 Q168,76 164,86 Z"/>
+  <!-- Body -->
+  <ellipse class="body" cx="128" cy="168" rx="56" ry="60"/>
+  <!-- Belly scallop -->
+  <path class="belly" d="M86,170 Q128,186 170,170 Q166,200 128,214 Q90,200 86,170 Z"/>
+  <!-- Wings -->
+  <ellipse class="wing" cx="74" cy="158" rx="26" ry="34"/>
+  <ellipse class="wing" cx="182" cy="158" rx="26" ry="34"/>
+  <!-- Feet -->
+  <rect class="foot" x="108" y="214" width="12" height="18" rx="6"/>
+  <rect class="foot" x="136" y="214" width="12" height="18" rx="6"/>
+  <!-- Beak (eyes will overlay) -->
+  <polygon class="beak" points="122,128 134,128 128,142"/>
+</svg>

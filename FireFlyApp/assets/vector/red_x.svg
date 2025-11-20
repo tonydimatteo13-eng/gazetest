@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs><style>.bar{fill:#d83933}</style></defs>
+  <rect class="bar" x="36" y="108" width="184" height="40" rx="20" transform="rotate(45 128 128)"/>
+  <rect class="bar" x="36" y="108" width="184" height="40" rx="20" transform="rotate(-45 128 128)"/>
+</svg>

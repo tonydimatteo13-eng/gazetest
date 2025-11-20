@@ -1,0 +1,8 @@
+disabled_rules:
+- identifier_name
+- function_parameter_count
+- type_body_length
+- file_length
+- notification_center_detachment
+included:
+excluded:

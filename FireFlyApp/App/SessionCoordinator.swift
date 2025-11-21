@@ -49,6 +49,9 @@ final class SessionCoordinator: ObservableObject {
         scene.onTrialFinished = { [weak self] trial in
             Task { await self?.handleTrial(trial) }
         }
+        scene.onBlockFinished = { [weak self] block in
+            Task { await self?.handleBlockFinished(block) }
+        }
     }
 
     func startSession() {
@@ -86,15 +89,16 @@ final class SessionCoordinator: ObservableObject {
             trials.append(trial)
             self.refreshSessionMeta()
         }
-        let baselineCount = trials.filter { $0.block == .baseline }.count
-        if stage == .baseline && baselineCount >= config.baselineTrialCount {
+    }
+
+    func handleBlockFinished(_ block: TrialBlock) async {
+        switch block {
+        case .baseline:
             await MainActor.run {
                 stage = .sst
                 scene.startSST()
             }
-        }
-        let sstCount = trials.filter { $0.block == .sst }.count
-        if sstCount >= config.sstTrialCount {
+        case .sst:
             gazeTracker.stop()
             await finalizeResults()
         }
@@ -104,6 +108,7 @@ final class SessionCoordinator: ObservableObject {
         guard let meta = sessionMeta else { return }
         let scored = Scorer.computeResults(session: meta, trials: trials)
         await MainActor.run {
+            print("[SessionCoordinator] results – baselineGo=\(scored.includedBaselineGo) sstGo=\(scored.includedSSTGo) stop=\(scored.includedStop) includedGoAll=\(scored.includedGo)")
             results = scored
             stage = .results
         }

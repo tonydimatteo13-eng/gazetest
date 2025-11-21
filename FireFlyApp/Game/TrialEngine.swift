@@ -31,6 +31,11 @@ public final class TrialEngine {
     private var baselineIndex: Int = 0
     private var sstIndex: Int = 0
     private var globalTrialCounter: Int = 0
+    private var baselineValidGoCount: Int = 0
+    private var sstValidGoCount: Int = 0
+    private var sstValidStopCount: Int = 0
+    private var sstCompletedCount: Int = 0
+    private var shouldEndSSTEarly: Bool = false
     private(set) var completedTrials: [Trial] = []
 
     public init(config: GameConfig = .production) {
@@ -44,6 +49,11 @@ public final class TrialEngine {
         baselineIndex = 0
         sstIndex = 0
         globalTrialCounter = 0
+        baselineValidGoCount = 0
+        sstValidGoCount = 0
+        sstValidStopCount = 0
+        sstCompletedCount = 0
+        shouldEndSSTEarly = false
         completedTrials.removeAll()
         baselinePlan = scheduler.baselineSchedule()
         sstPlan = scheduler.sstSchedule()
@@ -62,6 +72,10 @@ public final class TrialEngine {
     }
 
     public func nextSSTTrial() -> ScheduledTrial? {
+        if config.enableEarlyStop && shouldEndSSTEarly {
+            print("[TrialEngine] nextSSTTrial() – early stop triggered after \(sstCompletedCount) SST trials (goValid=\(sstValidGoCount) stopValid=\(sstValidStopCount))")
+            return nil
+        }
         guard sstIndex < sstPlan.count else {
             print("[TrialEngine] nextSSTTrial() – exhausted at index \(sstIndex) / \(sstPlan.count)")
             return nil
@@ -92,6 +106,7 @@ public final class TrialEngine {
             exclusions: exclusions
         )
         completedTrials.append(trial)
+        updateCountsAndEarlyStop(for: trial)
         return trial
     }
 
@@ -110,5 +125,41 @@ public final class TrialEngine {
             out.append(.lostTracking)
         }
         return out
+    }
+
+    private func updateCountsAndEarlyStop(for trial: Trial) {
+        if trial.block == .sst {
+            sstCompletedCount += 1
+        }
+
+        guard isIncludedForCounts(trial) else { return }
+
+        switch trial.block {
+        case .baseline:
+            if trial.type == .go && trial.goSuccess {
+                baselineValidGoCount += 1
+            }
+        case .sst:
+            if trial.type == .go && trial.goSuccess {
+                sstValidGoCount += 1
+            } else if trial.type == .stop {
+                sstValidStopCount += 1
+            }
+        }
+
+        if config.enableEarlyStop,
+           sstCompletedCount >= 40,
+           sstValidGoCount >= 20,
+           sstValidStopCount >= 16 {
+            shouldEndSSTEarly = true
+            print("[TrialEngine] Early stop criteria met – sstCompleted=\(sstCompletedCount) goValid=\(sstValidGoCount) stopValid=\(sstValidStopCount)")
+        }
+    }
+
+    private func isIncludedForCounts(_ trial: Trial) -> Bool {
+        guard !trial.headMotionFlag, !trial.lostTrackingFlag else { return false }
+        if trial.gazeRMSEDeg > 2.5 { return false }
+        if let rt = trial.rtMs, rt < config.anticipationThresholdMs { return false }
+        return true
     }
 }

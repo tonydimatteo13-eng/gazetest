@@ -1,122 +1,150 @@
-# AGENTS.md — Build Plan for gpt‑codex‑high
+FireflyStopSignalAgent
 
-## Role & mode
-You are the **Build Agent** for an iPad app named **FireFlyApp**. Implement exactly what the PRD specifies. Treat all timings and thresholds as **hard constraints**.
+Purpose
+FireflyStopSignalAgent runs the owl–firefly oculomotor stop-signal task (SST) to estimate proactive and reactive inhibitory control in young children. It implements a short-form, toddler-feasible version of the oculomotor SST described by Kelly et al. 2021 (12° step targets; central STOP signal) while maintaining compatibility with our scoring and ASD-likeness models.
 
-## Repo layout
-```
-FireFlyApp/
-  App/
-  Game/
-  Gaze/
-  Scoring/
-  Gateway/
-  Resources/
-  Tests/
-assets/vector/          # provided SVGs
-docs/
-```
+Task Structure
 
-## Tasks (do in order)
-1) **Scaffold Xcode project** (iPadOS 17+, Swift 5.9+). Add Camera/Face Tracking entitlements.
-2) **SwiftUI shell**: screens for Welcome, Calibration, Baseline, SST, Results; About & Privacy modals.
-3) **ARKit GazeTracker** (`ARFaceTrackingConfiguration`), per‑frame gaze ray → screen point; expose `latestPoint`, `latestDistanceCm`.
-4) **Calibrator**: 9‑point capture → fit mapping; compute **RMSE (deg)**; force recalibration if RMSE > 1.5°.
-5) **SpriteKit scene** with states `.calibrate → .fixate → .go → (.stop?) → .feedback → .iti`.
-   - Fixation **≥500 ms** inside 3° radius.
-   - GO at ±12°; timeout **650 ms** ⇒ “FASTER!” overlay.
-   - STOP appears after **SSD 50–200 ms**; max 3 same‑type trials in a row.
-6) **Saccade detection** (ROI‑based, 60 Hz): onset at corridor exit; GO correct if first landing ≥6° toward target; STOP correct if no corridor entry after STOP; drop RT <100 ms.
-7) **Data model**: `Session`, `Trial`, `Results` structs matching PRD fields. Persist in memory during run.
-8) **Scorer**: compute Baseline RT, GO RT (SST), Slowing, Stopping Accuracy, SSRT (integration), and Bayes classifier (two features). Emit Proactive z‑score and category thresholds (≥0.70 / 0.30–0.70 / ≤0.30).
-9) **Airtable/Proxy client** (behind flags): batch create **≤10** trials per request; handle **429** with exponential backoff + jitter (base 500 ms, factor 2, cap 30 s, ≤6 retries). Provide offline queue (disk) + idempotent batch IDs.
-10) **Assets**: import vectors (convert to single‑scale PDF) into `Assets.xcassets` using the **exact names** given in PRD. Optional parallax on `bg_*`.
-11) **Results UI**: show numeric metrics, z‑score gauge, ASD‑likeness label; export/upload button.
-12) **Config**: add `.xcconfig.sample` with:
-```
-UPLOAD_ENABLED = NO
-USE_PROXY = YES
-API_BASE_URL = https://example-worker.example.workers.dev
-AIRTABLE_BASE_ID = appXXXXXXXXXXXXXX
-AIRTABLE_TABLE_SESSIONS = Sessions
-AIRTABLE_TABLE_TRIALS = Trials
-AIRTABLE_TABLE_RESULTS = Results
-# Demo-only (if USE_PROXY = NO)
-AIRTABLE_PAT = *** PLACEHOLDER ***
-```
-13) **Determinism/TestMode**: seed RNG for trial order/SSD when `TestMode` is on.
+Blocks
 
-## Public types & signatures (must implement)
-```swift
-// Gaze/GazeTracker.swift
-final class GazeTracker: NSObject, ARSessionDelegate {
-    struct Sample { let t: TimeInterval; let point: CGPoint; let distanceCm: Double }
-    var latestPoint: CGPoint { get }
-    var latestDistanceCm: Double { get }
-    func start()
-    func stop()
-}
+Baseline Block
 
-// Gaze/Calibrator.swift
-struct CalibrationResult { let rmseDeg: Double; let transform: simd_double3x3 }
-final class Calibrator {
-    func begin()
-    func capture(point screenPt: CGPoint, sample gazeRay: simd_double3)
-    func finish() -> CalibrationResult
-    func screenPoint(from gazeRay: simd_double3, headPose: simd_double4x4) -> CGPoint
-}
+Trials: 10 GO-only trials.
 
-// Game/FireFlyScene.swift
-final class FireFlyScene: SKScene {
-    enum State { case calibrate, fixate, go, stop, feedback, iti }
-    var onTrialFinished: ((Trial) -> Void)?
-    func configure(with config: GameConfig, calibrator: Calibrator, gaze: GazeTracker)
-    func startBaseline()
-    func startSST()
-}
+Stimuli:
 
-// Scoring/Scorer.swift
-struct SessionMeta { /* PRD session fields */ }
-struct Trial { /* PRD trial fields */ }
-enum ClassLabel: String { case typicalLike = "Typical-like", indeterminate = "Indeterminate", asdLike = "ASD-like" }
-struct Results { /* PRD results fields + classifier outputs */ }
+Central owl fixation cross.
 
-struct Scorer {
-    static func computeResults(session: SessionMeta, trials: [Trial]) -> Results
-    static func ssrt(goRTs: [Double], ssds: [Double], pFail: Double) -> Double
-    static func bayesASDLike(stopAcc: Double, slowingMs: Double) -> (p: Double, label: ClassLabel, z: Double)
-}
+Firefly (white circle) appears at ±12° horizontally.
 
-// Gateway/AirtableClient.swift (or ApiClient.swift when using proxy)
-final class AirtableClient {
-    init(cfg: AirtableConfig)
-    func createSession(_ fields: [String: Any]) async throws -> String
-    func createTrials(sessionRecordId: String, trials: [[String: Any]]) async throws
-    func createResults(sessionRecordId: String, fields: [String: Any]) async throws
-}
-```
+Timing:
 
-## Acceptance tests
-- **AT‑1 Calibration quality**: synthetic gaze with 1° noise ⇒ RMSE ≤ 1.2°; with 3° noise ⇒ RMSE > 1.5° and UI forces recalibration.
-- **AT‑2 Baseline timing**: simulated saccades at 250 ms ⇒ baseline mean RT ∈ [240,260] ms; timeouts at 650 ms show “FASTER!”.
-- **AT‑3 STOP accuracy**: simulated perfect stopping ⇒ accuracy ≥95% across SSDs.
-- **AT‑4 SSD window**: recorded `ssd_ms` uniformly cover 50–200 ms (±10 ms).
-- **AT‑5 Scorer math**: fixture `score_typical.json` ⇒ `p_asd_like ≤ 0.30`; fixture `score_asdlike.json` ⇒ `p_asd_like ≥ 0.70`.
-- **AT‑6 Exclusions**: `rt_ms < 100` or `gaze_rmse_deg > 2.5` ⇒ excluded from denominators.
-- **AT‑7 Upload chunking**: 23 trials ⇒ exactly 3 create requests (10/10/3).
-- **AT‑8 429 backoff**: first two calls return 429 ⇒ exponential backoff + jitter; eventual success; no duplicates.
-- **AT‑9 Offline queue**: network loss mid‑block ⇒ results still display; on next foreground uploads Session + Trials + Results and links correctly.
+Fixation: 1500–2000 ms (jittered; extended if fixation unstable).
 
-## Coding constraints
-- No third‑party SDKs. No analytics. No secrets in source control.
-- Deterministic RNG for `TestMode`. Clear comments for any heuristics (e.g., ROI sizes).
-- 60 fps; avoid allocations in `update(_:)`.
+GO cue duration: up to 650 ms (deadline).
 
-## Runbook
-- Open the project in Xcode, run on an iPad with TrueDepth camera.
-- If enabling upload, duplicate `.xcconfig.sample` → `.xcconfig`, fill IDs/URLs, set `UPLOAD_ENABLED=YES`.
-- Use attached vectors; convert to single‑scale PDFs; keep names unchanged.
+Instructions:
 
-## Deliverables
-- Compilable project, assets catalog, unit tests, fixtures, `.xcconfig.sample`, short README.
-- Print file tree + acceptance‑test checklist at the end of the build run.
+“Follow the firefly as fast as you can when it appears.”
+
+Purpose:
+
+Establish baseline visually guided saccade RT distribution.
+
+Stop-Signal Block (SST)
+
+Trials: up to 60 trials.
+
+GO trials: 60% (~36)
+
+STOP trials: 40% (~24)
+
+Stimuli:
+
+Central owl (fixation).
+
+Firefly appears at ±12° as a step target.
+
+STOP signal: stop sign held by the owl at center.
+
+Timing:
+
+Fixation: 1500–2000 ms (jittered).
+
+GO cue: 12° left/right.
+
+GO deadline: 650 ms.
+
+SSD: 50–200 ms after GO onset, randomized each STOP trial.
+
+Constraints:
+
+Max 3 GO or STOP trials in a row.
+
+Max 3 left or right trials in a row.
+
+Instructions:
+
+GO: “Follow the firefly.”
+
+STOP: “If the owl shows a STOP sign, keep your eyes on the owl and do NOT look at the firefly.”
+
+Total duration: ~4–6 minutes depending on child speed and early-stop logic.
+
+Early-Stop Logic
+
+To avoid over-long sessions while preserving data quality, the agent supports optional early termination of the SST block.
+
+Minimum per-session valid data (for analysis):
+
+Baseline: ≥ 8 valid GO trials.
+
+SST: ≥ 20 valid GO trials and ≥ 16 valid STOP trials.
+
+Heuristic early stop (if enableEarlyStop = true):
+
+When:
+
+Total SST trials ≥ 40, and
+
+Valid SST GO ≥ 20, and
+
+Valid SST STOP ≥ 16,
+
+The agent may end the SST block and mark it as “complete.”
+
+This keeps the protocol in the 3–6 minute range under typical conditions.
+
+A future iteration may replace heuristic early stop with full Bayesian stopping rules (e.g., CI-based thresholds on stopping accuracy and GO RT slowing).
+
+Metrics & Outputs
+
+For each completed session, the agent logs:
+
+BaselineRTMean / BaselineRTSD
+
+Mean and SD of valid baseline GO saccadic reaction times.
+
+GoRTMean / GoRTSD
+
+Mean and SD of GO RTs in the SST block.
+
+GoRTSlowing
+
+Difference between SST GO RT mean and baseline RT mean.
+
+Interpreted as a measure of proactive control (greater slowing → more proactive control).
+
+StopAccuracy
+
+Percentage of STOP trials with successfully inhibited saccades.
+
+SSRT (Stop Signal Reaction Time)
+
+Estimated using the integration method (Logan & Cowan, Hanes & Schall) applied to the GO RT distribution and STOP success rate, separately by direction when needed.
+
+All metrics are computed only if per-session minimums are met.
+
+Design Constraints (Scientific)
+
+Target eccentricity remains 12° horizontally, matching Kelly et al. 2021.
+
+Firefly remains a step target:
+
+No continuous pursuit movement.
+
+Optional short pop/ease-in animation at the new location is allowed, but no pre-trial motion.
+
+Owl remains fixed at the center during trials.
+
+STOP signal appears at the center after SSD and persists for the remainder of the trial.
+
+Saccade detection, corridor logic, and integration-method SSRT estimation are unchanged in principle; only counts, scheduling, and optional early-stop behavior differ from the original long-form implementation.
+
+Usage Notes
+
+This agent is intended to run as a short, self-contained game session for toddlers and young children (~3–6 minutes).
+
+Multiple sessions per child (e.g., weekly) are expected; classifier models will use both per-session features and across-session trends.
+
+If a session does not meet the minimum valid trial counts, metrics are flagged as low-confidence and excluded from model training or clinical decisions.

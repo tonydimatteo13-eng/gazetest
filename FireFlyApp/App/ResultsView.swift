@@ -14,13 +14,29 @@ struct ResultsView: View {
                 .multilineTextAlignment(.center)
                 .foregroundColor(.white.opacity(0.9))
             if let results = coordinator.results {
-                ResultRow(title: "Baseline RT", value: format(ms: results.baselineRTMs))
-                ResultRow(title: "GO RT", value: format(ms: results.goRTMs))
-                ResultRow(title: "GO-RT Slowing", value: format(ms: results.goRTSlowingMs))
-                ResultRow(title: "Stopping Accuracy", value: String(format: "%.1f%%", results.stoppingAccuracyPct))
-                ResultRow(title: "SSRT", value: format(ms: results.ssrtMs))
-                ResultRow(title: "Proactive Control z", value: String(format: "%.2f", results.proactiveZ))
-                ResultRow(title: "ASD-likeness", value: String(format: "%.2f (%@)", results.pASDLike, results.classificationLabel.rawValue))
+                let meetsMinimums =
+                    results.includedBaselineGo >= 8 &&
+                    results.includedSSTGo >= 20 &&
+                    results.includedStop >= 16
+
+                ResultRow(title: "Baseline RT", value: meetsMinimums ? format(ms: results.baselineRTMs) : "–")
+                ResultRow(title: "GO RT", value: meetsMinimums ? format(ms: results.goRTMs) : "–")
+                ResultRow(title: "GO-RT Slowing", value: meetsMinimums ? format(ms: results.goRTSlowingMs) : "–")
+                ResultRow(title: "Stopping Accuracy", value: meetsMinimums && results.stoppingAccuracyPct.isFinite ? String(format: "%.1f%%", results.stoppingAccuracyPct) : "–")
+                ResultRow(title: "SSRT", value: meetsMinimums ? format(ms: results.ssrtMs) : "–")
+                ResultRow(title: "Proactive Control z", value: meetsMinimums && results.proactiveZ.isFinite ? String(format: "%.2f", results.proactiveZ) : "–")
+                ResultRow(title: "ASD-likeness", value: meetsMinimums ? String(format: "%.2f (%@)", results.pASDLike, results.classificationLabel.rawValue) : "–")
+                if !meetsMinimums {
+                    Text(
+                        """
+                        Not enough valid trials to compute full results.
+                        Baseline GO: \(results.includedBaselineGo)/8, SST GO: \(results.includedSSTGo)/20, STOP: \(results.includedStop)/16.
+                        """
+                    )
+                    .font(.footnote)
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(.white.opacity(0.8))
+                }
             }
             if coordinator.isUploading {
                 ProgressView(coordinator.uploadStatus ?? "Uploading…")

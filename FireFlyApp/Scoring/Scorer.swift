@@ -37,6 +37,8 @@ public struct Scorer {
             pASDLike: bayes.p,
             proactiveZ: proactive,
             classificationLabel: bayes.label,
+            includedBaselineGo: summary.includedBaseline.count,
+            includedSSTGo: summary.includedSSTGo.count,
             includedGo: summary.includedGoAll.count,
             includedStop: summary.includedStop.count,
             buildID: session.buildID

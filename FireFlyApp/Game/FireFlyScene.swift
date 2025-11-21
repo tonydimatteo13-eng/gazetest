@@ -7,6 +7,7 @@ public final class FireFlyScene: SKScene {
     public enum State { case calibrate, fixate, go, stop, feedback, iti }
 
     public var onTrialFinished: ((Trial) -> Void)?
+    public var onBlockFinished: ((TrialBlock) -> Void)?
 
     private var config: GameConfig = .production
     private var calibrator: Calibrator = Calibrator()
@@ -34,6 +35,8 @@ public final class FireFlyScene: SKScene {
     private var centerAccumHorizontalRad: Double = 0
     private var centerAccumVerticalRad: Double = 0
     private var centerSampleCount: Int = 0
+    private var fixationDifficultyStart: TimeInterval?
+    private var lastFixationHintTime: TimeInterval?
 
     // Nodes
     private let rootNode = SKNode()
@@ -44,6 +47,7 @@ public final class FireFlyScene: SKScene {
     private let owlNode = SKSpriteNode(imageNamed: "owl_body")
     private let owlEyesOpen = SKSpriteNode(imageNamed: "owl_eyes_open")
     private let owlEyesBlink = SKSpriteNode(imageNamed: "owl_eyes_blink")
+    private let hintLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
 
     private let pixelsPerDegree: Double = 109.0
 
@@ -127,10 +131,15 @@ private extension FireFlyScene {
         fireflyNode.zPosition = 10
         rootNode.addChild(fireflyNode)
         fireflyNode.run(SKAction.repeatForever(glowAnimation()))
+        let bobUp = SKAction.moveBy(x: 0, y: 6, duration: 0.9)
+        bobUp.timingMode = .easeInEaseOut
+        let bobSequence = SKAction.sequence([bobUp, bobUp.reversed()])
+        fireflyNode.run(SKAction.repeatForever(bobSequence), withKey: "idleBob")
 
         stopNode.isHidden = true
         stopNode.zPosition = 20
-        rootNode.addChild(stopNode)
+        owlNode.addChild(stopNode)
+        stopNode.position = CGPoint(x: 0, y: 120)
 
         feedbackNode.isHidden = true
         feedbackNode.zPosition = 25
@@ -149,6 +158,15 @@ private extension FireFlyScene {
             SKAction.run { [weak self] in self?.blink() }
         ])
         owlNode.run(SKAction.repeatForever(blink))
+
+        hintLabel.fontSize = 26
+        hintLabel.fontColor = .white
+        hintLabel.horizontalAlignmentMode = .center
+        hintLabel.verticalAlignmentMode = .center
+        hintLabel.position = CGPoint(x: 0, y: -size.height * 0.32)
+        hintLabel.text = ""
+        hintLabel.isHidden = true
+        rootNode.addChild(hintLabel)
     }
 
     func addBackground() {
@@ -164,6 +182,12 @@ private extension FireFlyScene {
             node.zPosition = z
             node.position = .zero
             backgroundNode.addChild(node)
+            let amplitude: CGFloat = 8.0
+            let duration: TimeInterval = 6.0
+            let moveRight = SKAction.moveBy(x: amplitude, y: 0, duration: duration)
+            moveRight.timingMode = .easeInEaseOut
+            let parallax = SKAction.sequence([moveRight, moveRight.reversed()])
+            node.run(SKAction.repeatForever(parallax))
         }
     }
 
@@ -248,6 +272,7 @@ private extension FireFlyScene {
         print("[Fixation candidate] radius=\(String(format: "%.2f", radius))° state=\(state)")
         let effectiveRadiusDeg = config.fixationRadiusDeg
         if radius <= effectiveRadiusDeg {
+            fixationDifficultyStart = nil
             fixationStreak += 1
             if fixationStartSample == nil {
                 fixationStartSample = sample.timestamp
@@ -267,12 +292,41 @@ private extension FireFlyScene {
                 beginGoPhase(at: sample.timestamp)
             }
         } else {
+            trackFixationDifficulty(sample: sample, radius: radius)
             if fixationStreak > 0 {
                 print("[Fixation reset] radius=\(String(format: "%.2f", radius))°")
             }
             fixationStreak = 0
             fixationStartSample = nil
         }
+    }
+
+    func trackFixationDifficulty(sample: AngleSample, radius: Double) {
+        let thresholdDeg = 10.0
+        guard radius >= thresholdDeg else {
+            fixationDifficultyStart = nil
+            return
+        }
+        if fixationDifficultyStart == nil {
+            fixationDifficultyStart = sample.timestamp
+        }
+        guard let start = fixationDifficultyStart else { return }
+        let elapsedMs = (sample.timestamp - start) * 1000.0
+        if elapsedMs >= 3000 {
+            showFixationHintIfNeeded(now: sample.timestamp)
+        }
+    }
+
+    func showFixationHintIfNeeded(now: TimeInterval) {
+        let cooldownMs = 5000.0
+        if let last = lastFixationHintTime {
+            let deltaMs = (now - last) * 1000.0
+            if deltaMs < cooldownMs { return }
+        }
+        lastFixationHintTime = now
+        hintLabel.text = "Please help your child look at the owl in the center.\n\nIf this keeps happening, adjust the device so their eyes are level with the screen."
+        hintLabel.isHidden = false
+        print("[Fixation] showing guidance hint for sustained off-center gaze")
     }
 
     func beginGoPhase(at timestamp: TimeInterval) {
@@ -302,16 +356,27 @@ private extension FireFlyScene {
         let unitsPerDegree = maxOffset / CGFloat(config.targetEccentricityDeg)
         let offset = CGFloat(targetDeg) * unitsPerDegree
         print("[Scene] presentStimulus() – targetDeg=\(targetDeg) offset=\(offset) sceneWidth=\(size.width) visibleHalfWidth=\(halfWidth)")
+        fireflyNode.removeAllActions()
         fireflyNode.position = CGPoint(x: offset, y: 0)
-        fireflyNode.setScale(0.9)
+        fireflyNode.setScale(0.85)
         fireflyNode.alpha = 0
         fireflyNode.isHidden = false
-        owlNode.isHidden = true
-        let appear = SKAction.group([
-            SKAction.fadeIn(withDuration: 0.12),
-            SKAction.scale(to: 1.0, duration: 0.12).easeOut()
-        ])
+        // Keep the owl visible on STOP trials so the central STOP sign can appear,
+        // but hide it on GO trials to emphasize the peripheral step target.
+        owlNode.isHidden = (trial.type == .go)
+        let fadeIn = SKAction.fadeIn(withDuration: 0.05)
+        let scaleUp = SKAction.scale(to: 1.05, duration: 0.08).easeOut()
+        let settle = SKAction.scale(to: 1.0, duration: 0.06).easeOut()
+        let pulse = SKAction.sequence([scaleUp, settle])
+        let appear = SKAction.group([fadeIn, pulse])
         fireflyNode.run(appear)
+        fireflyNode.run(SKAction.repeatForever(glowAnimation()))
+        if fireflyNode.action(forKey: "idleBob") == nil {
+            let bobUp = SKAction.moveBy(x: 0, y: 6, duration: 0.9)
+            bobUp.timingMode = .easeInEaseOut
+            let bobSequence = SKAction.sequence([bobUp, bobUp.reversed()])
+            fireflyNode.run(SKAction.repeatForever(bobSequence), withKey: "idleBob")
+        }
         stopNode.isHidden = true
         feedbackNode.isHidden = true
     }
@@ -323,13 +388,17 @@ private extension FireFlyScene {
     }
 
     func showStopSignal() {
+        stopNode.removeAllActions()
+        owlNode.isHidden = false
         stopNode.isHidden = false
         stopNode.alpha = 0
         stopNode.setScale(0.9)
-        let appear = SKAction.group([
-            SKAction.fadeIn(withDuration: 0.12),
-            SKAction.scale(to: 1.0, duration: 0.12).easeOut()
-        ])
+        let startPosition = CGPoint(x: 0, y: 90)
+        let raisedPosition = CGPoint(x: 0, y: 120)
+        stopNode.position = startPosition
+        let moveUp = SKAction.move(to: raisedPosition, duration: 0.12).easeOut()
+        let fadeIn = SKAction.fadeIn(withDuration: 0.12)
+        let appear = SKAction.group([moveUp, fadeIn, SKAction.scale(to: 1.0, duration: 0.12).easeOut()])
         stopNode.run(appear)
     }
 
@@ -393,6 +462,8 @@ private extension FireFlyScene {
         if scheduledTrial == nil {
             state = .calibrate
             print("[Scene] state set to .calibrate (no scheduled trial)")
+            let finishedBlock: TrialBlock = baselineMode ? .baseline : .sst
+            onBlockFinished?(finishedBlock)
         } else {
             state = .fixate
             print("[Scene] state set to .fixate – waiting for fixation")
@@ -475,6 +546,16 @@ private extension FireFlyScene {
 
     func cleanupAfterTrial() {
         state = .feedback
+        hintLabel.isHidden = true
+        if !stopNode.isHidden {
+            let loweredPosition = CGPoint(x: 0, y: 90)
+            let moveDown = SKAction.move(to: loweredPosition, duration: 0.15).easeOut()
+            let fadeOut = SKAction.fadeOut(withDuration: 0.15)
+            let lower = SKAction.group([moveDown, fadeOut])
+            stopNode.run(lower) { [weak self] in
+                self?.stopNode.isHidden = true
+            }
+        }
         run(SKAction.wait(forDuration: 0.6)) { [weak self] in
             guard let self else { return }
             self.state = .iti

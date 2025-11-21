@@ -97,11 +97,27 @@ public struct Results: Codable {
     public let pASDLike: Double
     public let proactiveZ: Double
     public let classificationLabel: ClassLabel
+    public let includedBaselineGo: Int
+    public let includedSSTGo: Int
     public let includedGo: Int
     public let includedStop: Int
     public let buildID: String
 
-    public init(baselineRTMs: Double, goRTMs: Double, goRTSlowingMs: Double, stoppingAccuracyPct: Double, ssrtMs: Double, pASDLike: Double, proactiveZ: Double, classificationLabel: ClassLabel, includedGo: Int, includedStop: Int, buildID: String) {
+    public init(
+        baselineRTMs: Double,
+        goRTMs: Double,
+        goRTSlowingMs: Double,
+        stoppingAccuracyPct: Double,
+        ssrtMs: Double,
+        pASDLike: Double,
+        proactiveZ: Double,
+        classificationLabel: ClassLabel,
+        includedBaselineGo: Int,
+        includedSSTGo: Int,
+        includedGo: Int,
+        includedStop: Int,
+        buildID: String
+    ) {
         self.baselineRTMs = baselineRTMs
         self.goRTMs = goRTMs
         self.goRTSlowingMs = goRTSlowingMs
@@ -110,6 +126,8 @@ public struct Results: Codable {
         self.pASDLike = pASDLike
         self.proactiveZ = proactiveZ
         self.classificationLabel = classificationLabel
+        self.includedBaselineGo = includedBaselineGo
+        self.includedSSTGo = includedSSTGo
         self.includedGo = includedGo
         self.includedStop = includedStop
         self.buildID = buildID

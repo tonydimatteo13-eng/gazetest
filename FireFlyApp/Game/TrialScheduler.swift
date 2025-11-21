@@ -26,6 +26,10 @@ public final class TrialScheduler {
         self.rng = SeededGenerator(seed: config.rngSeed)
     }
 
+    /// Baseline block:
+    /// - GO-only trials at ±targetEccentricityDeg (step targets).
+    /// - Short-form protocol (Kelly et al. 2021–aligned) targets 10 trials,
+    ///   yielding ≥ 8 valid GO trials under typical conditions.
     public func baselineSchedule() -> [ScheduledTrial] {
         var trials: [ScheduledTrial] = []
         var directionToggle: Bool = false
@@ -43,6 +47,13 @@ public final class TrialScheduler {
         return trials
     }
 
+    /// Stop-signal block (SST) schedule:
+    /// - Uses config.sstTrialCount as an upper bound (short-form target: 60 trials).
+    /// - Preserves GO:STOP ratio via config.goProbability (default 0.6; STOP = 1 − GO).
+    /// - Enforces at most config.maxConsecutiveType GO or STOP trials in a row.
+    /// - Enforces at most config.maxSameSideInRow left or right trials in a row.
+    /// - On STOP trials, draws SSD uniformly from config.stopSignalDelayRangeMs
+    ///   (default 50–200 ms) to match the oculomotor SST timing in Kelly et al. 2021.
     public func sstSchedule() -> [ScheduledTrial] {
         let total = config.sstTrialCount
         let targetGo = Int(round(Double(total) * config.goProbability))
@@ -53,11 +64,13 @@ public final class TrialScheduler {
         var trials: [ScheduledTrial] = []
         var lastType: TrialType = .go
         var streak = 0
+        var lastDirection: TrialDirection?
+        var sideStreak = 0
 
         for index in 0..<total {
             let type = pickType(remainingGo: &remainingGo, remainingStop: &remainingStop, lastType: lastType, streak: &streak)
             lastType = type
-            let direction = pickDirection()
+            let direction = pickDirection(lastDirection: &lastDirection, streak: &sideStreak)
             let ssd = type == .stop ? randomSSD() : nil
             trials.append(ScheduledTrial(
                 index: index,
@@ -109,9 +122,25 @@ public final class TrialScheduler {
         return chosen
     }
 
-    private func pickDirection() -> TrialDirection {
-        let roll = rng.next() & 1
-        return roll == 0 ? .left : .right
+    private func pickDirection(lastDirection: inout TrialDirection?, streak: inout Int) -> TrialDirection {
+        let forceOtherSide = streak >= config.maxSameSideInRow
+        let randomRoll = rng.next() & 1
+        let randomDirection: TrialDirection = randomRoll == 0 ? .left : .right
+
+        let chosen: TrialDirection
+        if forceOtherSide, let last = lastDirection {
+            chosen = last == .left ? .right : .left
+        } else {
+            chosen = randomDirection
+        }
+
+        if let last = lastDirection, chosen == last {
+            streak += 1
+        } else {
+            streak = 1
+        }
+        lastDirection = chosen
+        return chosen
     }
 
     private func randomSSD() -> Int {

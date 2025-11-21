@@ -26,8 +26,10 @@ public struct TrialMetricsInput {
 public final class TrialEngine {
     private let config: GameConfig
     private let scheduler: TrialScheduler
+    private var trainingPlan: [ScheduledTrial]
     private var baselinePlan: [ScheduledTrial]
     private var sstPlan: [ScheduledTrial]
+    private var trainingIndex: Int = 0
     private var baselineIndex: Int = 0
     private var sstIndex: Int = 0
     private var globalTrialCounter: Int = 0
@@ -41,11 +43,18 @@ public final class TrialEngine {
     public init(config: GameConfig = .production) {
         self.config = config
         self.scheduler = TrialScheduler(config: config)
+        self.trainingPlan = scheduler.trainingSchedule()
         self.baselinePlan = scheduler.baselineSchedule()
         self.sstPlan = scheduler.sstSchedule()
     }
 
+    public var validBaselineGoCount: Int { baselineValidGoCount }
+    public var validSSTGoCount: Int { sstValidGoCount }
+    public var validSSTStopCount: Int { sstValidStopCount }
+    public var completedSSTCount: Int { sstCompletedCount }
+
     public func reset() {
+        trainingIndex = 0
         baselineIndex = 0
         sstIndex = 0
         globalTrialCounter = 0
@@ -55,9 +64,21 @@ public final class TrialEngine {
         sstCompletedCount = 0
         shouldEndSSTEarly = false
         completedTrials.removeAll()
+        trainingPlan = scheduler.trainingSchedule()
         baselinePlan = scheduler.baselineSchedule()
         sstPlan = scheduler.sstSchedule()
-        print("[TrialEngine] reset – baselineCount=\(baselinePlan.count) sstCount=\(sstPlan.count)")
+        print("[TrialEngine] reset – trainingCount=\(trainingPlan.count) baselineCount=\(baselinePlan.count) sstCount=\(sstPlan.count)")
+    }
+
+    public func nextTrainingTrial() -> ScheduledTrial? {
+        guard trainingIndex < trainingPlan.count else {
+            print("[TrialEngine] nextTrainingTrial() – exhausted at index \(trainingIndex) / \(trainingPlan.count)")
+            return nil
+        }
+        let trial = trainingPlan[trainingIndex]
+        trainingIndex += 1
+        print("[TrialEngine] nextTrainingTrial() -> index=\(trial.index) block=\(trial.block) type=\(trial.type) dir=\(trial.direction)")
+        return trial
     }
 
     public func nextBaselineTrial() -> ScheduledTrial? {
@@ -135,6 +156,8 @@ public final class TrialEngine {
         guard isIncludedForCounts(trial) else { return }
 
         switch trial.block {
+        case .training:
+            break
         case .baseline:
             if trial.type == .go && trial.goSuccess {
                 baselineValidGoCount += 1
@@ -152,11 +175,13 @@ public final class TrialEngine {
            sstValidGoCount >= 20,
            sstValidStopCount >= 16 {
             shouldEndSSTEarly = true
+            // See AGENTS.md – Early-Stop Logic
             print("[TrialEngine] Early stop criteria met – sstCompleted=\(sstCompletedCount) goValid=\(sstValidGoCount) stopValid=\(sstValidStopCount)")
         }
     }
 
     private func isIncludedForCounts(_ trial: Trial) -> Bool {
+        if trial.block == .training { return false }
         guard !trial.headMotionFlag, !trial.lostTrackingFlag else { return false }
         if trial.gazeRMSEDeg > 2.5 { return false }
         if let rt = trial.rtMs, rt < config.anticipationThresholdMs { return false }

@@ -10,13 +10,25 @@ final class SessionCoordinator: ObservableObject {
     enum Stage {
         case welcome
         case calibration
+        case calibrationReview
+        case training
         case baseline
+        case baselineBreak
         case sst
+        case sstMidBreak
         case results
+    }
+
+    enum CalibrationQuality {
+        case good
+        case ok
+        case poor
     }
 
     @Published var stage: Stage = .welcome
     @Published var calibrationRMSE: Double = 0
+    @Published var calibrationResult: CalibrationResult?
+    @Published var calibrationQuality: CalibrationQuality?
     @Published var trials: [Trial] = []
     @Published var results: Results?
     @Published var showAbout = false
@@ -24,6 +36,7 @@ final class SessionCoordinator: ObservableObject {
     @Published var isUploading = false
     @Published var uploadStatus: String?
     @Published var gazeDebug: String = ""
+    @Published var stageStarted: Bool = false
 
     let gazeTracker: GazeTracker
     let calibrator = Calibrator()
@@ -52,20 +65,29 @@ final class SessionCoordinator: ObservableObject {
         scene.onBlockFinished = { [weak self] block in
             Task { await self?.handleBlockFinished(block) }
         }
+        scene.onBreakRequested = { [weak self] type in
+            Task { await self?.handleBreakRequest(type) }
+        }
     }
 
     func startSession() {
         trials.removeAll()
         results = nil
         calibrationRMSE = 0
+        calibrationResult = nil
+        calibrationQuality = nil
         sessionMeta = nil
         gazeDebug = "Tracker: \(gazeTracker.modeDescription)"
         gazeTracker.start()
-        stage = .calibration
+        stageStarted = false
         beginCalibration()
     }
 
     func beginCalibration() {
+        stage = .calibration
+        stageStarted = false
+        calibrationResult = nil
+        calibrationQuality = nil
         let controller = CalibrationController(calibrator: calibrator, gazeTracker: gazeTracker)
         calibrationController = controller
         controller.onCompletion = { [weak self] result in
@@ -75,13 +97,38 @@ final class SessionCoordinator: ObservableObject {
     }
 
     func handleCalibration(result: CalibrationResult) async {
-        calibrationRMSE = result.rmseDeg
-        gazeTracker.apply(calibration: result)
+        await MainActor.run {
+            calibrationRMSE = result.rmseDeg
+            calibrationResult = result
+            calibrationQuality = quality(for: result.rmseDeg)
+            gazeTracker.apply(calibration: result)
+            calibrationController = nil
+            stage = .calibrationReview
+        }
+    }
+
+    func continueAfterCalibration() {
+        guard calibrationResult != nil, let quality = calibrationQuality else { return }
+        guard quality != .poor else { return }
         createSessionMeta()
         scene.configure(with: config, calibrator: calibrator, gaze: gazeTracker)
-        calibrationController = nil
-        stage = .baseline
-        scene.startBaseline()
+        stage = .training
+        stageStarted = false
+    }
+
+    func continueToSST() {
+        stage = .sst
+        stageStarted = false
+    }
+
+    func resumeAfterMidSSTBreak() {
+        stage = .sst
+        stageStarted = false
+        scene.resumeAfterBreak()
+    }
+
+    func requestRecalibration() {
+        beginCalibration()
     }
 
     func handleTrial(_ trial: Trial) async {
@@ -93,14 +140,51 @@ final class SessionCoordinator: ObservableObject {
 
     func handleBlockFinished(_ block: TrialBlock) async {
         switch block {
+        case .training:
+            await MainActor.run {
+                stage = .baseline
+                stageStarted = false
+            }
         case .baseline:
             await MainActor.run {
-                stage = .sst
-                scene.startSST()
+                stage = .baselineBreak
+                stageStarted = false
             }
         case .sst:
             gazeTracker.stop()
             await finalizeResults()
+        }
+    }
+
+    func handleBreakRequest(_ breakType: FireFlyScene.BreakType) async {
+        switch breakType {
+        case .baselineToSST:
+            await MainActor.run {
+                stage = .baselineBreak
+                stageStarted = false
+            }
+        case .midSST:
+            await MainActor.run {
+                stage = .sstMidBreak
+                stageStarted = false
+            }
+        }
+    }
+
+    func startCurrentStage() {
+        guard !stageStarted else { return }
+        switch stage {
+        case .training:
+            stageStarted = true
+            scene.startTraining()
+        case .baseline:
+            stageStarted = true
+            scene.startBaseline()
+        case .sst:
+            stageStarted = true
+            scene.startSST()
+        default:
+            break
         }
     }
 
@@ -146,6 +230,12 @@ final class SessionCoordinator: ObservableObject {
             buildID: build
         )
         sessionMeta = meta
+    }
+
+    private func quality(for rmse: Double) -> CalibrationQuality {
+        if rmse <= 1.5 { return .good }
+        if rmse <= 2.0 { return .ok }
+        return .poor
     }
 
     func restart() {

@@ -11,10 +11,12 @@ struct RootView: View {
             switch coordinator.stage {
             case .welcome:
                 WelcomeView()
-            case .calibration:
+            case .calibration, .calibrationReview:
                 CalibrationView()
-            case .baseline, .sst:
+            case .training, .baseline, .sst:
                 GameContainerView()
+            case .baselineBreak, .sstMidBreak:
+                BreakView()
             case .results:
                 ResultsView()
             }
@@ -64,5 +66,72 @@ struct WelcomeView: View {
                 .foregroundColor(.gray)
         }
         .padding()
+    }
+}
+
+struct BreakView: View {
+    @EnvironmentObject var coordinator: SessionCoordinator
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Text(title)
+                .font(.largeTitle.bold())
+                .multilineTextAlignment(.center)
+            Text(message)
+                .font(.title3)
+                .multilineTextAlignment(.center)
+                .padding()
+            Button(buttonTitle) {
+                action()
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .foregroundColor(.white)
+        .padding()
+        .background(Color.black.ignoresSafeArea())
+    }
+
+    private var title: String {
+        switch coordinator.stage {
+        case .baselineBreak:
+            return "Part 1 done!"
+        case .sstMidBreak:
+            return "Halfway there"
+        default:
+            return ""
+        }
+    }
+
+    private var message: String {
+        switch coordinator.stage {
+        case .baselineBreak:
+            return "Next, the owl may show a STOP sign. Follow the firefly unless you see STOP, then keep your eyes on the owl."
+        case .sstMidBreak:
+            return "Take a breath, then tap when you're ready for more fireflies."
+        default:
+            return ""
+        }
+    }
+
+    private var buttonTitle: String {
+        switch coordinator.stage {
+        case .baselineBreak:
+            return "Start Part 2"
+        case .sstMidBreak:
+            return "Keep Going"
+        default:
+            return "Continue"
+        }
+    }
+
+    private func action() {
+        switch coordinator.stage {
+        case .baselineBreak:
+            coordinator.continueToSST()
+        case .sstMidBreak:
+            coordinator.resumeAfterMidSSTBreak()
+        default:
+            break
+        }
     }
 }

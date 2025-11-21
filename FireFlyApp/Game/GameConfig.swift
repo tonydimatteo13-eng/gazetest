@@ -18,6 +18,8 @@ public struct GameConfig {
     public let rngSeed: UInt64
     public let enableEarlyStop: Bool
     public let isTestMode: Bool
+    public let trainingGoCount: Int
+    public let trainingStopCount: Int
 
     public init(
         baselineTrialCount: Int = 10,
@@ -27,16 +29,18 @@ public struct GameConfig {
         maxSameSideInRow: Int = 3,
         targetEccentricityDeg: Double = 12.0,
         fixationRadiusDeg: Double = 3.0,
-        fixationSamplesRequired: Int = 8,
+        fixationSamplesRequired: Int = 18,
         goTimeoutMs: Int = 650,
-        itiRangeMs: ClosedRange<Int> = 1000...1500,
+        itiRangeMs: ClosedRange<Int> = 500...700,
         anticipationThresholdMs: Int = 100,
         stopSignalDelayRangeMs: ClosedRange<Int> = 50...200,
         fixationDurationMsRange: ClosedRange<Int> = 1500...2000,
         samplingRateHz: Double = 60.0,
         rngSeed: UInt64 = 0xF1F2F3F4,
         enableEarlyStop: Bool = true,
-        isTestMode: Bool = false
+        isTestMode: Bool = false,
+        trainingGoCount: Int = 6,
+        trainingStopCount: Int = 4
     ) {
         self.baselineTrialCount = baselineTrialCount
         self.sstTrialCount = sstTrialCount
@@ -55,6 +59,8 @@ public struct GameConfig {
         self.rngSeed = rngSeed
         self.enableEarlyStop = enableEarlyStop
         self.isTestMode = isTestMode
+        self.trainingGoCount = trainingGoCount
+        self.trainingStopCount = trainingStopCount
     }
 
     /// Default short-form clinical production config (~4–6 minutes).

@@ -4,10 +4,12 @@ import UIKit
 import simd
 
 public final class FireFlyScene: SKScene {
-    public enum State { case calibrate, fixate, go, stop, feedback, iti }
+    public enum State { case calibrate, fixate, go, stop, feedback, iti, paused }
+    public enum BreakType { case baselineToSST, midSST }
 
     public var onTrialFinished: ((Trial) -> Void)?
     public var onBlockFinished: ((TrialBlock) -> Void)?
+    public var onBreakRequested: ((BreakType) -> Void)?
 
     private var config: GameConfig = .production
     private var calibrator: Calibrator = Calibrator()
@@ -16,7 +18,7 @@ public final class FireFlyScene: SKScene {
     private var detector: SaccadeDetector = SaccadeDetector(anticipationThresholdMs: 100)
 
     private var state: State = .calibrate
-    private var baselineMode = true
+    private var currentBlock: TrialBlock?
     private var scheduledTrial: ScheduledTrial?
     private var goStartTime: TimeInterval?
     private var stopSignalTime: TimeInterval?
@@ -36,7 +38,15 @@ public final class FireFlyScene: SKScene {
     private var centerAccumVerticalRad: Double = 0
     private var centerSampleCount: Int = 0
     private var fixationDifficultyStart: TimeInterval?
-    private var lastFixationHintTime: TimeInterval?
+    private var lastHintTime: TimeInterval?
+    private var lastSampleTime: TimeInterval?
+    private var hasIssuedMidSSTBreak = false
+
+    private var shouldCalibrateGazeCenter: Bool {
+        currentBlock == .training || currentBlock == .baseline
+    }
+
+    private var didSetupScene = false
 
     // Nodes
     private let rootNode = SKNode()
@@ -48,13 +58,23 @@ public final class FireFlyScene: SKScene {
     private let owlEyesOpen = SKSpriteNode(imageNamed: "owl_eyes_open")
     private let owlEyesBlink = SKSpriteNode(imageNamed: "owl_eyes_blink")
     private let hintLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+    private let hintBackground = SKShapeNode()
 
     private let pixelsPerDegree: Double = 109.0
 
     public override func didMove(to view: SKView) {
         super.didMove(to: view)
+        guard !didSetupScene else {
+            recomputeVisibleWidth(for: view)
+            return
+        }
+        didSetupScene = true
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
         setupScene()
+        recomputeVisibleWidth(for: view)
+    }
+
+    private func recomputeVisibleWidth(for view: SKView) {
         // Compute the horizontally visible portion of the scene given the
         // SpriteKit view's aspect ratio. On tall iPhones, the scene is cropped
         // horizontally when aspectFill is used, so we must keep targets inside
@@ -86,37 +106,79 @@ public final class FireFlyScene: SKScene {
         print("[FireFlyScene] Configured with gaze tracker")
     }
 
+    public func startTraining() {
+        prepareForBlock(.training, resetEngine: true, resetGazeCenter: true)
+    }
+
     public func startBaseline() {
-        baselineMode = true
-        print("[Scene] startBaseline() – resetting engine and scheduling baseline trials")
-        engine.reset()
-        gazeCenterCalibrated = false
-        centerHorizontalRad = 0
-        centerVerticalRad = 0
-        centerAccumHorizontalRad = 0
-        centerAccumVerticalRad = 0
-        centerSampleCount = 0
-        advanceToNextTrial()
+        prepareForBlock(.baseline, resetEngine: false, resetGazeCenter: true)
     }
 
     public func startSST() {
-        baselineMode = false
-        print("[Scene] startSST() – advancing to SST trials")
+        prepareForBlock(.sst, resetEngine: false, resetGazeCenter: false)
+    }
+
+    public func resumeAfterBreak() {
+        print("[Scene] resumeAfterBreak() – advancing to next scheduled trial")
         advanceToNextTrial()
     }
 
     public override func update(_ currentTime: TimeInterval) {
         super.update(currentTime)
-        guard let trial = scheduledTrial, let goTime = goStartTime else { return }
+        guard let trial = scheduledTrial, let goTime = goStartTime else {
+            checkForLostTracking(currentTime: currentTime)
+            return
+        }
+        checkForLostTracking(currentTime: currentTime)
         switch state {
         case .go:
             updateStopStateIfNeeded(currentTime: currentTime, trial: trial)
             evaluateTimeout(currentTime: currentTime, goTime: goTime, trial: trial)
         case .stop:
             evaluateTimeout(currentTime: currentTime, goTime: goTime, trial: trial)
+        case .fixate, .iti, .paused, .calibrate:
+            checkForLostTracking(currentTime: currentTime)
         default:
             break
         }
+    }
+}
+
+// MARK: - Block lifecycle
+private extension FireFlyScene {
+    func prepareForBlock(_ block: TrialBlock, resetEngine: Bool, resetGazeCenter: Bool) {
+        currentBlock = block
+        state = .calibrate
+        scheduledTrial = nil
+        goStartTime = nil
+        stopSignalTime = nil
+        fixationStartSample = nil
+        fixationStreak = 0
+        trialCompleted = false
+        gazeSamples.removeAll(keepingCapacity: true)
+        distanceSamples.removeAll(keepingCapacity: true)
+        headMotionFlag = false
+        lostTrackingFlag = false
+        lastSampleTime = CACurrentMediaTime()
+        hasIssuedMidSSTBreak = false
+        hintLabel.isHidden = true
+        if resetEngine {
+            engine.reset()
+        }
+        if resetGazeCenter {
+            resetGazeCenterOffsets()
+        }
+        print("[Scene] prepareForBlock(\(block)) – resetEngine=\(resetEngine) resetGazeCenter=\(resetGazeCenter)")
+        advanceToNextTrial()
+    }
+
+    func resetGazeCenterOffsets() {
+        gazeCenterCalibrated = false
+        centerHorizontalRad = 0
+        centerVerticalRad = 0
+        centerAccumHorizontalRad = 0
+        centerAccumVerticalRad = 0
+        centerSampleCount = 0
     }
 }
 
@@ -159,13 +221,18 @@ private extension FireFlyScene {
         ])
         owlNode.run(SKAction.repeatForever(blink))
 
-        hintLabel.fontSize = 26
+        hintLabel.fontSize = 20
         hintLabel.fontColor = .white
         hintLabel.horizontalAlignmentMode = .center
         hintLabel.verticalAlignmentMode = .center
-        hintLabel.position = CGPoint(x: 0, y: -size.height * 0.32)
+        hintLabel.position = CGPoint(x: 0, y: -size.height * 0.18)
         hintLabel.text = ""
         hintLabel.isHidden = true
+        hintBackground.fillColor = UIColor.black.withAlphaComponent(0.7)
+        hintBackground.strokeColor = .clear
+        hintBackground.zPosition = 50
+        hintBackground.isHidden = true
+        rootNode.addChild(hintBackground)
         rootNode.addChild(hintLabel)
     }
 
@@ -223,7 +290,7 @@ private extension FireFlyScene {
         let rawHorizontalRad = atan2(ray.x, ray.z)
         let rawVerticalRad = atan2(ray.y, ray.z)
 
-        if state == .fixate && baselineMode && !gazeCenterCalibrated {
+        if state == .fixate && shouldCalibrateGazeCenter && !gazeCenterCalibrated {
             centerAccumHorizontalRad += rawHorizontalRad
             centerAccumVerticalRad += rawVerticalRad
             centerSampleCount += 1
@@ -252,6 +319,7 @@ private extension FireFlyScene {
         let horizontalDeg = horizontalRad * 180.0 / .pi
         let verticalDeg = verticalRad * 180.0 / .pi
         let angleSample = AngleSample(timestamp: sample.t, horizontalDeg: horizontalDeg, verticalDeg: verticalDeg)
+        lastSampleTime = sample.t
 
         switch state {
         case .fixate:
@@ -267,6 +335,18 @@ private extension FireFlyScene {
         }
     }
 
+    func checkForLostTracking(currentTime: TimeInterval) {
+        guard let last = lastSampleTime else { return }
+        let deltaMs = (currentTime - last) * 1000.0
+        if deltaMs >= 1500 {
+            if !lostTrackingFlag {
+                lostTrackingFlag = true
+                lastHintTime = currentTime
+        showCoachingMessage("Hold steady and look at the owl so we can find your eyes.")
+        }
+    }
+    }
+
     func processFixation(sample: AngleSample) {
         let radius = hypot(sample.horizontalDeg, sample.verticalDeg)
         print("[Fixation candidate] radius=\(String(format: "%.2f", radius))° state=\(state)")
@@ -278,7 +358,8 @@ private extension FireFlyScene {
                 fixationStartSample = sample.timestamp
             }
             let durationMs = (sample.timestamp - (fixationStartSample ?? sample.timestamp)) * 1000.0
-            let minSamplesForTime = Int(ceil(config.samplingRateHz * 0.5))
+            // See AGENTS.md – toddler-friendly fixation window (~300–333 ms at 60 Hz).
+            let minSamplesForTime = Int(ceil(config.samplingRateHz * 0.3))
             let requiredSamples = max(config.fixationSamplesRequired, minSamplesForTime)
             print(String(
                 format: "[Fixation] radius=%.2f°, window=%.2f°, streak=%d, durationMs=%d, requiredSamples=%d",
@@ -288,7 +369,7 @@ private extension FireFlyScene {
                 Int(durationMs),
                 requiredSamples
             ))
-            if fixationStreak >= requiredSamples && durationMs >= 500.0 {
+            if fixationStreak >= requiredSamples && durationMs >= 300.0 {
                 beginGoPhase(at: sample.timestamp)
             }
         } else {
@@ -318,15 +399,36 @@ private extension FireFlyScene {
     }
 
     func showFixationHintIfNeeded(now: TimeInterval) {
-        let cooldownMs = 5000.0
-        if let last = lastFixationHintTime {
-            let deltaMs = (now - last) * 1000.0
-            if deltaMs < cooldownMs { return }
-        }
-        lastFixationHintTime = now
-        hintLabel.text = "Please help your child look at the owl in the center.\n\nIf this keeps happening, adjust the device so their eyes are level with the screen."
-        hintLabel.isHidden = false
+        guard canShowHint(now: now) else { return }
+        lastHintTime = now
+        showCoachingMessage("Keep your eyes on the owl so the firefly knows where you're looking.")
         print("[Fixation] showing guidance hint for sustained off-center gaze")
+    }
+
+    func canShowHint(now: TimeInterval, cooldownMs: Double = 5000.0) -> Bool {
+        if let last = lastHintTime {
+            let deltaMs = (now - last) * 1000.0
+            if deltaMs < cooldownMs { return false }
+        }
+        return true
+    }
+
+    func showCoachingMessage(_ message: String, duration: TimeInterval = 2.8) {
+        hintLabel.removeAllActions()
+        hintLabel.text = message
+        hintLabel.alpha = 1.0
+        hintLabel.isHidden = false
+        let padding: CGFloat = 18
+        let textSize = hintLabel.frame.insetBy(dx: -padding, dy: -padding)
+        let bubblePath = UIBezierPath(roundedRect: textSize, cornerRadius: 12)
+        hintBackground.path = bubblePath.cgPath
+        hintBackground.position = hintLabel.position
+        hintBackground.isHidden = false
+        let wait = SKAction.wait(forDuration: duration)
+        hintLabel.run(wait) { [weak self] in
+            self?.hintLabel.isHidden = true
+            self?.hintBackground.isHidden = true
+        }
     }
 
     func beginGoPhase(at timestamp: TimeInterval) {
@@ -441,8 +543,19 @@ private extension FireFlyScene {
 // MARK: - Trial completion
 private extension FireFlyScene {
     func advanceToNextTrial() {
-        let modeLabel = baselineMode ? "baseline" : "sst"
-        scheduledTrial = baselineMode ? engine.nextBaselineTrial() : engine.nextSSTTrial()
+        guard let block = currentBlock else {
+            print("[Scene] advanceToNextTrial() – currentBlock is nil")
+            return
+        }
+        let modeLabel = "\(block)"
+        switch block {
+        case .training:
+            scheduledTrial = engine.nextTrainingTrial()
+        case .baseline:
+            scheduledTrial = engine.nextBaselineTrial()
+        case .sst:
+            scheduledTrial = engine.nextSSTTrial()
+        }
         if let trial = scheduledTrial {
             print("[Scene] advanceToNextTrial() – mode=\(modeLabel) index=\(trial.index) block=\(trial.block) type=\(trial.type) dir=\(trial.direction)")
         } else {
@@ -462,8 +575,7 @@ private extension FireFlyScene {
         if scheduledTrial == nil {
             state = .calibrate
             print("[Scene] state set to .calibrate (no scheduled trial)")
-            let finishedBlock: TrialBlock = baselineMode ? .baseline : .sst
-            onBlockFinished?(finishedBlock)
+            onBlockFinished?(block)
         } else {
             state = .fixate
             print("[Scene] state set to .fixate – waiting for fixation")
@@ -487,7 +599,7 @@ private extension FireFlyScene {
         let recorded = engine.record(trial: trial, metrics: metrics)
         onTrialFinished?(recorded)
         updateFeedback(for: trial, outcome: outcome, reason: reason)
-        cleanupAfterTrial()
+        cleanupAfterTrial(for: trial)
     }
 
     func computeRMSE(for trial: ScheduledTrial) -> Double {
@@ -544,7 +656,7 @@ private extension FireFlyScene {
         }
     }
 
-    func cleanupAfterTrial() {
+    func cleanupAfterTrial(for trial: ScheduledTrial) {
         state = .feedback
         hintLabel.isHidden = true
         if !stopNode.isHidden {
@@ -556,11 +668,18 @@ private extension FireFlyScene {
                 self?.stopNode.isHidden = true
             }
         }
-        run(SKAction.wait(forDuration: 0.6)) { [weak self] in
+        let feedbackDuration = 0.45
+        run(SKAction.wait(forDuration: feedbackDuration)) { [weak self] in
             guard let self else { return }
             self.state = .iti
             self.run(SKAction.wait(forDuration: self.randomITI())) { [weak self] in
-                self?.advanceToNextTrial()
+                guard let self else { return }
+                if let pauseType = self.pauseReason(after: trial) {
+                    self.state = .paused
+                    self.onBreakRequested?(pauseType)
+                } else {
+                    self.advanceToNextTrial()
+                }
             }
         }
     }
@@ -570,6 +689,20 @@ private extension FireFlyScene {
         let max = Double(config.itiRangeMs.upperBound)
         let roll = Double(itiRng.next()) / Double(UInt64.max)
         return (min + (max - min) * roll) / 1000.0
+    }
+
+    func pauseReason(after trial: ScheduledTrial) -> BreakType? {
+        if trial.block == .sst, !hasIssuedMidSSTBreak {
+            let validGo = engine.validSSTGoCount
+            let validStop = engine.validSSTStopCount
+            // Trigger mid-block break when child has reached roughly half of valid targets,
+            // or after 30 total SST attempts as a fallback.
+            if (validGo >= 10 && validStop >= 8) || engine.completedSSTCount >= 30 {
+                hasIssuedMidSSTBreak = true
+                return .midSST
+            }
+        }
+        return nil
     }
 }
 

@@ -47,6 +47,7 @@ public struct Scorer {
 
     private static func includedTrials(from trials: [Trial]) -> Summary {
         let included: [Trial] = trials.filter { trial in
+            if trial.block == .training { return false }
             guard !trial.headMotionFlag, !trial.lostTrackingFlag else { return false }
             if trial.gazeRMSEDeg > 2.5 { return false }
             if let rt = trial.rtMs, rt < 100 { return false }
@@ -56,7 +57,7 @@ public struct Scorer {
         let baseline = included.filter { $0.block == .baseline && $0.type == .go && $0.goSuccess }
         let sstGo = included.filter { $0.block == .sst && $0.type == .go && $0.goSuccess }
         let stop = included.filter { $0.block == .sst && $0.type == .stop }
-        let goAll = included.filter { $0.type == .go && $0.goSuccess }
+        let goAll = included.filter { $0.block != .training && $0.type == .go && $0.goSuccess }
         return Summary(includedBaseline: baseline, includedSSTGo: sstGo, includedStop: stop, includedGoAll: goAll)
     }
 

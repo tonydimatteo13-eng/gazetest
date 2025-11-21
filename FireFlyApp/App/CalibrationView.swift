@@ -19,6 +19,23 @@ struct CalibrationView: View {
                     .font(.caption)
                     .foregroundColor(.yellow)
             }
+            if let result = coordinator.calibrationResult, let quality = coordinator.calibrationQuality {
+                VStack(spacing: 6) {
+                    Text(qualityLabel(for: quality))
+                        .font(.title3.bold())
+                        .foregroundColor(qualityColor(for: quality))
+                    Text(String(format: "RMSE %.2f°", result.rmseDeg))
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    Text(qualityMessage(for: quality))
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.85))
+                        .multilineTextAlignment(.center)
+                }
+                .padding()
+                .background(Color.black.opacity(0.5))
+                .cornerRadius(12)
+            }
             if let controller = coordinator.calibrationController {
                 VStack(alignment: .leading, spacing: 4) {
                     ProgressView(value: controller.progress, total: 1)
@@ -47,9 +64,66 @@ struct CalibrationView: View {
                         .font(.caption2)
                         .foregroundColor(.yellow)
                 }
+            } else if let result = coordinator.calibrationResult {
+                VStack(spacing: 8) {
+                    Text(String(format: "Signal quality: %.2f° RMSE", result.rmseDeg))
+                        .foregroundColor(.white)
+                    if !coordinator.gazeDebug.isEmpty {
+                        Text(coordinator.gazeDebug)
+                            .font(.caption)
+                            .foregroundColor(.yellow)
+                    }
+                }
+            }
+            if coordinator.calibrationResult != nil {
+                HStack(spacing: 16) {
+                    Button("Recalibrate") {
+                        coordinator.requestRecalibration()
+                    }
+                    .buttonStyle(.bordered)
+                    Button("Continue") {
+                        coordinator.continueAfterCalibration()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!canContinue)
+                    .opacity(canContinue ? 1 : 0.6)
+                }
+                .padding(.top, 12)
             }
         }
         .background(Color.black.ignoresSafeArea())
+    }
+
+    private var canContinue: Bool {
+        guard let quality = coordinator.calibrationQuality else { return false }
+        return quality != .poor
+    }
+
+    private func qualityLabel(for quality: SessionCoordinator.CalibrationQuality) -> String {
+        switch quality {
+        case .good: return "Good calibration"
+        case .ok: return "OK calibration"
+        case .poor: return "Poor calibration"
+        }
+    }
+
+    private func qualityMessage(for quality: SessionCoordinator.CalibrationQuality) -> String {
+        switch quality {
+        case .good:
+            return "Looks sharp. You can continue to the game."
+        case .ok:
+            return "Signal is a bit fuzzy, you can recalibrate if needed."
+        case .poor:
+            return "Please recalibrate before starting."
+        }
+    }
+
+    private func qualityColor(for quality: SessionCoordinator.CalibrationQuality) -> Color {
+        switch quality {
+        case .good: return .green
+        case .ok: return .yellow
+        case .poor: return .red
+        }
     }
 }
 

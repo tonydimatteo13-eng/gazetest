@@ -138,19 +138,9 @@ final class CalibrationController: ObservableObject {
     private func finalize() {
         let result = calibrator.finish()
         status = String(format: "RMSE %.2f°", result.rmseDeg)
-        if result.rmseDeg > 1.5 {
-            status += " – please recalibrate"
-            debugInfo = "Restarting…"
-            isComplete = false
-            calibrator.begin()
-            currentIndex = 0
-            progress = 0
-            advancePoint()
-        } else {
-            isComplete = true
-            debugInfo = "Calibration complete"
-            onCompletion?(result)
-        }
+        debugInfo = result.rmseDeg > 2.0 ? "Signal quality is low. Please recalibrate." : "Calibration complete"
+        isComplete = true
+        onCompletion?(result)
     }
 }
 

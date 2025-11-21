@@ -47,6 +47,35 @@ public final class TrialScheduler {
         return trials
     }
 
+    /// Training/practice block:
+    /// - 12° step targets identical to production trials.
+    /// - Mix of GO and STOP without scoring; defaults to 6 GO / 4 STOP.
+    public func trainingSchedule() -> [ScheduledTrial] {
+        var remainingGo = config.trainingGoCount
+        var remainingStop = config.trainingStopCount
+        let total = remainingGo + remainingStop
+        var trials: [ScheduledTrial] = []
+        var lastType: TrialType = .go
+        var streak = 0
+        var lastDirection: TrialDirection?
+        var sideStreak = 0
+
+        for index in 0..<total {
+            let type = pickType(remainingGo: &remainingGo, remainingStop: &remainingStop, lastType: lastType, streak: &streak)
+            lastType = type
+            let direction = pickDirection(lastDirection: &lastDirection, streak: &sideStreak)
+            let ssd = type == .stop ? randomSSD() : nil
+            trials.append(ScheduledTrial(
+                index: index,
+                block: .training,
+                type: type,
+                direction: direction,
+                ssdMs: ssd
+            ))
+        }
+        return trials
+    }
+
     /// Stop-signal block (SST) schedule:
     /// - Uses config.sstTrialCount as an upper bound (short-form target: 60 trials).
     /// - Preserves GO:STOP ratio via config.goProbability (default 0.6; STOP = 1 − GO).

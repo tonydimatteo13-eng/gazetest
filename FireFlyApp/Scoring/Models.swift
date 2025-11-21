@@ -9,6 +9,7 @@ public enum AgeBucket: String, Codable, CaseIterable {
 }
 
 public enum TrialBlock: String, Codable, CaseIterable {
+    case training = "TR"
     case baseline = "BL"
     case sst = "SST"
 }

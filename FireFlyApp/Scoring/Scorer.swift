@@ -8,8 +8,8 @@ public struct Scorer {
         let includedGoAll: [Trial]
     }
 
-    public static func computeResults(session: SessionMeta, trials: [Trial]) -> Results {
-        let summary = includedTrials(from: trials)
+    public static func computeResults(session: SessionMeta, trials: [Trial], config: GameConfig = .production) -> Results {
+        let summary = includedTrials(from: trials, config: config)
         let baselineRTs = summary.includedBaseline.compactMap { $0.rtMs.map(Double.init) }
         let sstGoRTs = summary.includedSSTGo.compactMap { $0.rtMs.map(Double.init) }
         let baselineMean = Statistics.mean(baselineRTs)
@@ -45,14 +45,8 @@ public struct Scorer {
         )
     }
 
-    private static func includedTrials(from trials: [Trial]) -> Summary {
-        let included: [Trial] = trials.filter { trial in
-            if trial.block == .training { return false }
-            guard !trial.headMotionFlag, !trial.lostTrackingFlag else { return false }
-            if trial.gazeRMSEDeg > 2.5 { return false }
-            if let rt = trial.rtMs, rt < 100 { return false }
-            return true
-        }
+    private static func includedTrials(from trials: [Trial], config: GameConfig) -> Summary {
+        let included: [Trial] = trials.filter { TrialEngine.isIncluded($0, config: config) }
 
         let baseline = included.filter { $0.block == .baseline && $0.type == .go && $0.goSuccess }
         let sstGo = included.filter { $0.block == .sst && $0.type == .go && $0.goSuccess }

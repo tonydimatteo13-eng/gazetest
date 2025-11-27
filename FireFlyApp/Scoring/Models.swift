@@ -29,6 +29,28 @@ public enum TrialExclusion: String, Codable, CaseIterable {
     case poorGaze
     case headMotion
     case lostTracking
+    case noCorridorEntry
+    case timeout
+
+    /// Returns a human-readable label for debug logs and summaries.
+    public var debugLabel: String {
+        switch self {
+        case .anticipation: return "anticipation"
+        case .poorGaze: return "highRMSE"
+        case .headMotion: return "headMotion"
+        case .lostTracking: return "lostTracking"
+        case .noCorridorEntry: return "noCorridorEntry"
+        case .timeout: return "timeout"
+        }
+    }
+
+    /// Exclusions that prevent a trial from being used in analysis counts.
+    public var blocksInclusion: Bool {
+        switch self {
+        case .anticipation, .poorGaze, .headMotion, .lostTracking, .noCorridorEntry, .timeout:
+            return true
+        }
+    }
 }
 
 public struct SessionMeta: Codable {

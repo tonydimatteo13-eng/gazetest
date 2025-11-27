@@ -248,3 +248,24 @@ To maximize data quality and completion rates, the agent should:
 - This agent is intended to run as a short, self-contained game session for toddlers and young children (~3–6 minutes).
 - Multiple sessions per child (e.g., weekly) are expected; classifier models will use both per-session features and across-session trends.
 - If a session does not meet the minimum valid trial counts, metrics are flagged as low-confidence and excluded from downstream modeling.
+
+### Implementation & Debug Telemetry (Developer Notes)
+
+- The implementation must log **one structured debug line per trial** with:
+  - block (training / baseline / SST),
+  - type (GO / STOP),
+  - direction (left / right),
+  - RT (ms),
+  - corridor entry flag,
+  - horizontal gaze min / max (deg),
+  - per-trial gaze RMSE (deg),
+  - head-motion / lost-tracking flags,
+  - validity flag and exclusion reasons.
+- The implementation must log a **corridor-entry event** when the gaze first crosses the corridor threshold in the correct direction.
+- End-of-session summaries should include:
+  - valid / total counts per block and trial type,
+  - breakdown of exclusion reasons (no corridor entry, anticipation, high RMSE, head motion, lost tracking, etc.).
+- Corridor, anticipation, and gaze-quality thresholds (e.g., `corridorThresholdDeg`, `anticipationThresholdMs`, `maxTrialGazeRMSEDeg`) must be:
+  - Defined in configuration (not hard-coded magic numbers),
+  - Documented alongside their intended “scientific” values (e.g., 6° corridor threshold),
+  - Adjustable for pilot testing while preserving the core corridor logic and 12° target eccentricity.

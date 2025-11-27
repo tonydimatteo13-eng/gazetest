@@ -12,10 +12,15 @@ public final class FireFlyScene: SKScene {
     public var onBreakRequested: ((BreakType) -> Void)?
 
     private var config: GameConfig = .production
+    private var sessionUID: UUID?
     private var calibrator: Calibrator = Calibrator()
     private var gazeTracker: GazeTracker = GazeTracker()
-    private let engine = TrialEngine()
-    private var detector: SaccadeDetector = SaccadeDetector(anticipationThresholdMs: 100)
+    private var engine = TrialEngine()
+    private var detector: SaccadeDetector = SaccadeDetector(
+        anticipationThresholdMs: GameConfig.production.anticipationThresholdMs,
+        corridorEntryDeg: GameConfig.production.corridorThresholdDeg,
+        centralExclusionDeg: GameConfig.production.centralExclusionDeg
+    )
 
     private var state: State = .calibrate
     private var currentBlock: TrialBlock?
@@ -40,6 +45,7 @@ public final class FireFlyScene: SKScene {
     private var fixationDifficultyStart: TimeInterval?
     private var lastHintTime: TimeInterval?
     private var lastSampleTime: TimeInterval?
+    private var corridorEntryLogged = false
     private var hasIssuedMidSSTBreak = false
 
     private var shouldCalibrateGazeCenter: Bool {
@@ -94,16 +100,31 @@ public final class FireFlyScene: SKScene {
         print("[Scene] didMove – sceneSize=\(size) viewSize=\(viewSize) visibleHalfWidth=\(visibleHalfWidth)")
     }
 
-    public func configure(with config: GameConfig, calibrator: Calibrator, gaze: GazeTracker) {
+    public func configure(with config: GameConfig, calibrator: Calibrator, gaze: GazeTracker, sessionUID: UUID? = nil) {
         self.config = config
+        self.sessionUID = sessionUID
         self.calibrator = calibrator
         self.gazeTracker = gaze
-        self.detector = SaccadeDetector(anticipationThresholdMs: config.anticipationThresholdMs)
+        self.detector = SaccadeDetector(
+            anticipationThresholdMs: config.anticipationThresholdMs,
+            corridorEntryDeg: config.corridorThresholdDeg,
+            centralExclusionDeg: config.centralExclusionDeg
+        )
+        self.engine = TrialEngine(config: config)
+        self.engine.setSessionUID(sessionUID)
         itiRng = SeededGenerator(seed: config.rngSeed ^ 0xA5A5A5A5)
         gazeTracker.onSample = { [weak self] sample, ray, _ in
             self?.handle(sample: sample, ray: ray)
         }
-        print("[FireFlyScene] Configured with gaze tracker")
+        print(String(
+            format: "[FireFlyScene] Configured – corridor=%.1f° central=%.1f° anticipation=%dms gazeRMSE<=%.1f° headStep=%.1fcm headRange=%.1fcm",
+            config.corridorThresholdDeg,
+            config.centralExclusionDeg,
+            config.anticipationThresholdMs,
+            config.maxTrialGazeRMSEDeg,
+            config.maxHeadMotionStepCm,
+            config.maxHeadMotionRangeCm
+        ))
     }
 
     public func startTraining() {
@@ -159,6 +180,7 @@ private extension FireFlyScene {
         distanceSamples.removeAll(keepingCapacity: true)
         headMotionFlag = false
         lostTrackingFlag = false
+        corridorEntryLogged = false
         lastSampleTime = CACurrentMediaTime()
         hasIssuedMidSSTBreak = false
         hintLabel.isHidden = true
@@ -338,13 +360,13 @@ private extension FireFlyScene {
     func checkForLostTracking(currentTime: TimeInterval) {
         guard let last = lastSampleTime else { return }
         let deltaMs = (currentTime - last) * 1000.0
-        if deltaMs >= 1500 {
+        if deltaMs >= Double(config.maxLostTrackingGapMs) {
             if !lostTrackingFlag {
                 lostTrackingFlag = true
                 lastHintTime = currentTime
-        showCoachingMessage("Hold steady and look at the owl so we can find your eyes.")
+                showCoachingMessage("Hold steady and look at the owl so we can find your eyes.")
+            }
         }
-    }
     }
 
     func processFixation(sample: AngleSample) {
@@ -445,11 +467,13 @@ private extension FireFlyScene {
         distanceSamples.removeAll(keepingCapacity: true)
         headMotionFlag = false
         lostTrackingFlag = false
+        corridorEntryLogged = false
         presentStimulus(for: trial)
     }
 
     func presentStimulus(for trial: ScheduledTrial) {
         let targetDeg = trial.direction == .left ? -config.targetEccentricityDeg : config.targetEccentricityDeg
+        // 12° step target per spec (config.targetEccentricityDeg) mapped into SpriteKit space.
         // Map desired eccentricity in degrees into scene coordinates. We scale so that the
         // target lies comfortably within the horizontally visible portion of the scene,
         // even when the SpriteKit view crops the sides on tall iPhones.
@@ -507,6 +531,11 @@ private extension FireFlyScene {
 
     func evaluateSaccade(for trial: ScheduledTrial, goTime: TimeInterval) {
         let outcome = detector.evaluate(samples: gazeSamples, goTime: goTime, direction: trial.direction)
+        if let entry = outcome.firstEntry, !corridorEntryLogged {
+            corridorEntryLogged = true
+            let hString = String(format: "%.2f", entry.horizontalDeg)
+            print("[CorridorEntry] idx=\(trial.index) block=\(trial.block) type=\(trial.type) dir=\(trial.direction) tMs=\(entry.timestampMs) hDeg=\(hString)")
+        }
         guard let rt = outcome.reactionTimeMs else { return }
         if trial.type == .go {
             concludeTrial(reason: .completion(outcome))
@@ -528,13 +557,13 @@ private extension FireFlyScene {
 
     func monitorHeadMotion() {
         guard let first = distanceSamples.first, let last = distanceSamples.last else { return }
-        if abs(last - first) > 3.0 {
+        if abs(last - first) > config.maxHeadMotionStepCm {
             headMotionFlag = true
         }
         if distanceSamples.count >= 2 {
             let maxDistance = distanceSamples.max() ?? last
             let minDistance = distanceSamples.min() ?? first
-            if maxDistance - minDistance > 5.0 {
+            if maxDistance - minDistance > config.maxHeadMotionRangeCm {
                 headMotionFlag = true
             }
         }
@@ -569,6 +598,7 @@ private extension FireFlyScene {
         trialCompleted = false
         gazeSamples.removeAll(keepingCapacity: true)
         distanceSamples.removeAll(keepingCapacity: true)
+        corridorEntryLogged = false
         fireflyNode.isHidden = true
         stopNode.isHidden = true
         feedbackNode.isHidden = true
@@ -617,6 +647,7 @@ private extension FireFlyScene {
         var goSuccess = trial.type == .go && outcome.enteredCorridor
         var stopSuccess = trial.type == .stop && !outcome.enteredCorridor
         var rt = outcome.reactionTimeMs
+        let timeoutFlag: Bool
         if trial.type == .stop {
             goSuccess = false
         }
@@ -624,6 +655,9 @@ private extension FireFlyScene {
             goSuccess = false
             stopSuccess = trial.type == .stop && !outcome.enteredCorridor
             rt = nil
+            timeoutFlag = true
+        } else {
+            timeoutFlag = false
         }
 
         return TrialMetricsInput(
@@ -631,6 +665,14 @@ private extension FireFlyScene {
             rtMs: rt,
             goSuccess: goSuccess,
             stopSuccess: stopSuccess,
+            enteredCorridor: outcome.enteredCorridor,
+            corridorSide: outcome.firstEntry?.direction,
+            corridorEntryTimeMs: outcome.firstEntry?.timestampMs,
+            corridorEntryHorizontalDeg: outcome.firstEntry?.horizontalDeg,
+            horizontalMinDeg: outcome.horizontalMinDeg,
+            horizontalMaxDeg: outcome.horizontalMaxDeg,
+            anticipationFlag: outcome.anticipation,
+            timeoutFlag: timeoutFlag,
             gazeRMSEDeg: rmse,
             viewingDistanceCm: averageDistance,
             headMotionFlag: headMotionFlag,

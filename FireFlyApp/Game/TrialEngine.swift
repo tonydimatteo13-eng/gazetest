@@ -5,16 +5,49 @@ public struct TrialMetricsInput {
     public let rtMs: Int?
     public let goSuccess: Bool
     public let stopSuccess: Bool
+    public let enteredCorridor: Bool
+    public let corridorSide: TrialDirection?
+    public let corridorEntryTimeMs: Int?
+    public let corridorEntryHorizontalDeg: Double?
+    public let horizontalMinDeg: Double
+    public let horizontalMaxDeg: Double
+    public let anticipationFlag: Bool
+    public let timeoutFlag: Bool
     public let gazeRMSEDeg: Double
     public let viewingDistanceCm: Double
     public let headMotionFlag: Bool
     public let lostTrackingFlag: Bool
 
-    public init(goOnsetMs: Int, rtMs: Int?, goSuccess: Bool, stopSuccess: Bool, gazeRMSEDeg: Double, viewingDistanceCm: Double, headMotionFlag: Bool, lostTrackingFlag: Bool) {
+    public init(
+        goOnsetMs: Int,
+        rtMs: Int?,
+        goSuccess: Bool,
+        stopSuccess: Bool,
+        enteredCorridor: Bool = false,
+        corridorSide: TrialDirection? = nil,
+        corridorEntryTimeMs: Int? = nil,
+        corridorEntryHorizontalDeg: Double? = nil,
+        horizontalMinDeg: Double = 0,
+        horizontalMaxDeg: Double = 0,
+        anticipationFlag: Bool = false,
+        timeoutFlag: Bool = false,
+        gazeRMSEDeg: Double,
+        viewingDistanceCm: Double,
+        headMotionFlag: Bool,
+        lostTrackingFlag: Bool
+    ) {
         self.goOnsetMs = goOnsetMs
         self.rtMs = rtMs
         self.goSuccess = goSuccess
         self.stopSuccess = stopSuccess
+        self.enteredCorridor = enteredCorridor
+        self.corridorSide = corridorSide
+        self.corridorEntryTimeMs = corridorEntryTimeMs
+        self.corridorEntryHorizontalDeg = corridorEntryHorizontalDeg
+        self.horizontalMinDeg = horizontalMinDeg
+        self.horizontalMaxDeg = horizontalMaxDeg
+        self.anticipationFlag = anticipationFlag
+        self.timeoutFlag = timeoutFlag
         self.gazeRMSEDeg = gazeRMSEDeg
         self.viewingDistanceCm = viewingDistanceCm
         self.headMotionFlag = headMotionFlag
@@ -26,6 +59,7 @@ public struct TrialMetricsInput {
 public final class TrialEngine {
     private let config: GameConfig
     private let scheduler: TrialScheduler
+    private var sessionUID: UUID?
     private var trainingPlan: [ScheduledTrial]
     private var baselinePlan: [ScheduledTrial]
     private var sstPlan: [ScheduledTrial]
@@ -52,6 +86,10 @@ public final class TrialEngine {
     public var validSSTGoCount: Int { sstValidGoCount }
     public var validSSTStopCount: Int { sstValidStopCount }
     public var completedSSTCount: Int { sstCompletedCount }
+
+    public func setSessionUID(_ id: UUID?) {
+        sessionUID = id
+    }
 
     public func reset() {
         trainingIndex = 0
@@ -107,9 +145,9 @@ public final class TrialEngine {
         return trial
     }
 
-    @discardableResult public func record(trial scheduled: ScheduledTrial, metrics: TrialMetricsInput, gazeRMSE: Double? = nil) -> Trial {
+    @discardableResult public func record(trial scheduled: ScheduledTrial, metrics: TrialMetricsInput) -> Trial {
         globalTrialCounter += 1
-        let exclusions = computeExclusions(metrics: metrics)
+        let exclusions = computeExclusions(metrics: metrics, scheduled: scheduled)
         let trial = Trial(
             trialIndex: globalTrialCounter,
             block: scheduled.block,
@@ -127,23 +165,22 @@ public final class TrialEngine {
             exclusions: exclusions
         )
         completedTrials.append(trial)
+        logTrialDebug(trial: trial, metrics: metrics)
         updateCountsAndEarlyStop(for: trial)
         return trial
     }
 
-    private func computeExclusions(metrics: TrialMetricsInput) -> [TrialExclusion] {
+    private func computeExclusions(metrics: TrialMetricsInput, scheduled: ScheduledTrial) -> [TrialExclusion] {
         var out: [TrialExclusion] = []
-        if let rt = metrics.rtMs, rt < config.anticipationThresholdMs {
+        if metrics.timeoutFlag && scheduled.type == .go { out.append(.timeout) }
+        if metrics.anticipationFlag || (metrics.rtMs ?? Int.max) < config.anticipationThresholdMs {
             out.append(.anticipation)
         }
-        if metrics.gazeRMSEDeg > 2.5 {
-            out.append(.poorGaze)
-        }
-        if metrics.headMotionFlag {
-            out.append(.headMotion)
-        }
-        if metrics.lostTrackingFlag {
-            out.append(.lostTracking)
+        if metrics.gazeRMSEDeg > config.maxTrialGazeRMSEDeg { out.append(.poorGaze) }
+        if metrics.headMotionFlag { out.append(.headMotion) }
+        if metrics.lostTrackingFlag { out.append(.lostTracking) }
+        if scheduled.type == .go && !metrics.goSuccess {
+            out.append(.noCorridorEntry)
         }
         return out
     }
@@ -153,7 +190,7 @@ public final class TrialEngine {
             sstCompletedCount += 1
         }
 
-        guard isIncludedForCounts(trial) else { return }
+        guard TrialEngine.isIncluded(trial, config: config) else { return }
 
         switch trial.block {
         case .training:
@@ -180,11 +217,40 @@ public final class TrialEngine {
         }
     }
 
-    private func isIncludedForCounts(_ trial: Trial) -> Bool {
+    private func logTrialDebug(trial: Trial, metrics: TrialMetricsInput) {
+        let corridorSideLabel: String
+        switch metrics.corridorSide {
+        case .some(.left): corridorSideLabel = "left"
+        case .some(.right): corridorSideLabel = "right"
+        case .none: corridorSideLabel = "none"
+        }
+        let exclusionsLabel = trial.exclusions.map { $0.debugLabel }.joined(separator: ",")
+        let rmse = String(format: "%.2f", metrics.gazeRMSEDeg)
+        let hMin = String(format: "%.2f", metrics.horizontalMinDeg)
+        let hMax = String(format: "%.2f", metrics.horizontalMaxDeg)
+        let rtValue = metrics.rtMs ?? -1
+        let valid = TrialEngine.isIncluded(trial, config: config)
+        let session = sessionUID?.uuidString ?? "nil"
+        print("[TrialDebug] session=\(session) idx=\(trial.trialIndex) block=\(trial.block) type=\(trial.type) dir=\(trial.direction) rtMs=\(rtValue) enteredCorridor=\(metrics.enteredCorridor) corridorSide=\(corridorSideLabel) hMin=\(hMin) hMax=\(hMax) gazeRMSE=\(rmse) headMotion=\(metrics.headMotionFlag) lost=\(metrics.lostTrackingFlag) anticipation=\(metrics.anticipationFlag) timeout=\(metrics.timeoutFlag) isValid=\(valid) exclusions=[\(exclusionsLabel)]")
+    }
+
+    public static func isIncluded(_ trial: Trial, config: GameConfig) -> Bool {
+        // GO validity (used for counts and analysis):
+        // - Block is baseline or SST (training is always excluded).
+        // - Trial.goSuccess is true (corridor entry achieved).
+        // - No head/lost-tracking flags, gaze RMSE ≤ config.maxTrialGazeRMSEDeg.
+        // - RT is either nil (timeouts excluded) or ≥ config.anticipationThresholdMs.
+        // - No exclusions that block inclusion (anticipation, poor gaze, head motion, lost tracking, no corridor entry, timeout).
+        //
+        // STOP validity:
+        // - Block is SST.
+        // - Stop trials can be successful or failed; inclusion hinges on the same quality gates above.
         if trial.block == .training { return false }
-        guard !trial.headMotionFlag, !trial.lostTrackingFlag else { return false }
-        if trial.gazeRMSEDeg > 2.5 { return false }
+        if trial.type == .go && !trial.goSuccess { return false }
+        if trial.headMotionFlag || trial.lostTrackingFlag { return false }
+        if trial.gazeRMSEDeg > config.maxTrialGazeRMSEDeg { return false }
         if let rt = trial.rtMs, rt < config.anticipationThresholdMs { return false }
+        if trial.exclusions.contains(where: { $0.blocksInclusion }) { return false }
         return true
     }
 }

@@ -150,19 +150,14 @@ struct GameContainerView: View {
     }
 
     private var sstValidGo: Int {
-        coordinator.trials.filter { isValidTrial($0) && $0.block == .sst && $0.type == .go && $0.goSuccess }.count
+        coordinator.trials.filter { TrialEngine.isIncluded($0, config: coordinator.config) && $0.block == .sst && $0.type == .go }.count
     }
 
     private var sstValidStop: Int {
-        coordinator.trials.filter { isValidTrial($0) && $0.block == .sst && $0.type == .stop }.count
+        coordinator.trials.filter { TrialEngine.isIncluded($0, config: coordinator.config) && $0.block == .sst && $0.type == .stop }.count
     }
 
     private func isValidTrial(_ trial: Trial) -> Bool {
-        guard trial.block != .training else { return false }
-        guard !trial.headMotionFlag, !trial.lostTrackingFlag else { return false }
-        if trial.gazeRMSEDeg > 2.5 { return false }
-        if let rt = trial.rtMs, rt < coordinator.config.anticipationThresholdMs { return false }
-        if trial.type == .go && !trial.goSuccess { return false }
-        return true
+        TrialEngine.isIncluded(trial, config: coordinator.config)
     }
 }

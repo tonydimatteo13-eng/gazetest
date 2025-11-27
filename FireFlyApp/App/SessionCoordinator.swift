@@ -113,7 +113,7 @@ final class SessionCoordinator: ObservableObject {
         guard calibrationResult != nil, let quality = calibrationQuality else { return }
         guard quality != .poor else { return }
         createSessionMeta()
-        scene.configure(with: config, calibrator: calibrator, gaze: gazeTracker)
+        scene.configure(with: config, calibrator: calibrator, gaze: gazeTracker, sessionUID: sessionMeta?.sessionUID)
         stage = .training
         stageStarted = false
     }
@@ -201,7 +201,8 @@ final class SessionCoordinator: ObservableObject {
 
     private func finalizeResults() async {
         guard let meta = sessionMeta else { return }
-        let scored = Scorer.computeResults(session: meta, trials: trials)
+        let scored = Scorer.computeResults(session: meta, trials: trials, config: config)
+        logSessionSummary(trials: trials)
         await MainActor.run {
             print("[SessionCoordinator] results – baselineGo=\(scored.includedBaselineGo) sstGo=\(scored.includedSSTGo) stop=\(scored.includedStop) includedGoAll=\(scored.includedGo)")
             results = scored
@@ -241,6 +242,48 @@ final class SessionCoordinator: ObservableObject {
             buildID: build
         )
         sessionMeta = meta
+    }
+
+    private func logSessionSummary(trials: [Trial]) {
+        let baselineGo = trials.filter { $0.block == .baseline && $0.type == .go }
+        let sstGo = trials.filter { $0.block == .sst && $0.type == .go }
+        let sstStop = trials.filter { $0.block == .sst && $0.type == .stop }
+        let baselineValid = baselineGo.filter { TrialEngine.isIncluded($0, config: config) }.count
+        let sstGoValid = sstGo.filter { TrialEngine.isIncluded($0, config: config) }.count
+        let sstStopValid = sstStop.filter { TrialEngine.isIncluded($0, config: config) }.count
+
+        let baselineReasons = formatBreakdown(exclusionBreakdown(for: baselineGo))
+        let sstGoReasons = formatBreakdown(exclusionBreakdown(for: sstGo))
+        let sstStopReasons = formatBreakdown(exclusionBreakdown(for: sstStop))
+
+        let baselinePart = "[SessionSummary] baseline: validGo=\(baselineValid)/\(baselineGo.count)\(baselineReasons.isEmpty ? "" : " \(baselineReasons)")"
+        let sstPart = "sst: validGo=\(sstGoValid)/\(sstGo.count)\(sstGoReasons.isEmpty ? "" : " \(sstGoReasons)") validStop=\(sstStopValid)/\(sstStop.count)\(sstStopReasons.isEmpty ? "" : " \(sstStopReasons)")"
+        print("\(baselinePart) \(sstPart)")
+    }
+
+    private func exclusionBreakdown(for trials: [Trial]) -> [String: Int] {
+        var counts: [String: Int] = [:]
+        for trial in trials {
+            for exclusion in trial.exclusions {
+                counts[exclusion.debugLabel, default: 0] += 1
+            }
+            if trial.type == .go && !trial.goSuccess && !trial.exclusions.contains(.noCorridorEntry) {
+                counts[TrialExclusion.noCorridorEntry.debugLabel, default: 0] += 1
+            }
+        }
+        return counts
+    }
+
+    private func formatBreakdown(_ counts: [String: Int]) -> String {
+        let preferredOrder = ["noCorridorEntry", "anticipation", "highRMSE", "headMotion", "lostTracking", "timeout"]
+        var parts: [String] = preferredOrder.compactMap { key in
+            guard let value = counts[key], value > 0 else { return nil }
+            return "\(key)=\(value)"
+        }
+        let remaining = counts.filter { !preferredOrder.contains($0.key) && $0.value > 0 }
+        parts.append(contentsOf: remaining.map { "\($0.key)=\($0.value)" }.sorted())
+        guard !parts.isEmpty else { return "" }
+        return "(\(parts.joined(separator: ", ")))"
     }
 
     private func quality(for rmse: Double) -> CalibrationQuality {

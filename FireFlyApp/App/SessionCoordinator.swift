@@ -47,6 +47,7 @@ final class SessionCoordinator: ObservableObject {
     @Published var calibrationController: CalibrationController?
     private var cancellables: Set<AnyCancellable> = []
     private let uploadManager: UploadManager
+    private var pendingMidSSTResume = false
 
     init(
         config: GameConfig = .production,
@@ -80,6 +81,7 @@ final class SessionCoordinator: ObservableObject {
         gazeDebug = "Tracker: \(gazeTracker.modeDescription)"
         gazeTracker.start()
         stageStarted = false
+        pendingMidSSTResume = false
         beginCalibration()
     }
 
@@ -119,12 +121,13 @@ final class SessionCoordinator: ObservableObject {
     func continueToSST() {
         stage = .sst
         stageStarted = false
+        pendingMidSSTResume = false
     }
 
     func resumeAfterMidSSTBreak() {
+        pendingMidSSTResume = true
         stage = .sst
         stageStarted = false
-        scene.resumeAfterBreak()
     }
 
     func requestRecalibration() {
@@ -167,6 +170,8 @@ final class SessionCoordinator: ObservableObject {
             await MainActor.run {
                 stage = .sstMidBreak
                 stageStarted = false
+                pendingMidSSTResume = true
+                print("[SessionCoordinator] Mid-SST break requested")
             }
         }
     }
@@ -182,7 +187,13 @@ final class SessionCoordinator: ObservableObject {
             scene.startBaseline()
         case .sst:
             stageStarted = true
-            scene.startSST()
+            if pendingMidSSTResume {
+                pendingMidSSTResume = false
+                print("[SessionCoordinator] Resuming SST after mid-block break")
+                scene.resumeAfterBreak()
+            } else {
+                scene.startSST()
+            }
         default:
             break
         }
@@ -242,6 +253,7 @@ final class SessionCoordinator: ObservableObject {
         trials.removeAll()
         results = nil
         stage = .welcome
+        pendingMidSSTResume = false
     }
 
     func upload() async {

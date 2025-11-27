@@ -99,7 +99,7 @@ struct GameContainerView: View {
     private var stageInstruction: String {
         switch coordinator.stage {
         case .training:
-            return "Practice round: keep your eyes on the owl. Follow the firefly quickly, and if a STOP sign appears, keep looking at the owl."
+            return "Practice round: keep your eyes on the owl and follow the firefly quickly."
         case .baseline:
             return "Keep your eyes on the owl in the center. When the firefly appears, look at it as quickly as you can."
         case .sst:

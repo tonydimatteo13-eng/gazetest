@@ -484,6 +484,7 @@ private extension FireFlyScene {
     }
 
     func updateStopStateIfNeeded(currentTime: TimeInterval, trial: ScheduledTrial) {
+        guard trial.block != .training else { return }
         guard trial.type == .stop, let stopTime = stopSignalTime, currentTime >= stopTime else { return }
         state = .stop
         showStopSignal()
@@ -699,6 +700,7 @@ private extension FireFlyScene {
             // or after 30 total SST attempts as a fallback.
             if (validGo >= 10 && validStop >= 8) || engine.completedSSTCount >= 30 {
                 hasIssuedMidSSTBreak = true
+                print("[Scene] Triggering mid-SST break – validGo=\(validGo) validStop=\(validStop) completed=\(engine.completedSSTCount)")
                 return .midSST
             }
         }

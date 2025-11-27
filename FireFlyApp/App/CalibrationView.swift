@@ -4,94 +4,60 @@ struct CalibrationView: View {
     @EnvironmentObject var coordinator: SessionCoordinator
 
     var body: some View {
-        VStack(spacing: 12) {
-            VStack(spacing: 8) {
-                Text("Calibration")
-                    .font(.title2.bold())
-                Text("Keep your face in view. Gently move only your eyes.")
-                Text("When the star appears, look right at it and keep your eyes there until it moves to the next spot.")
-            }
-            .font(.headline)
-            .multilineTextAlignment(.center)
-            .foregroundColor(.white)
-            if !coordinator.gazeDebug.isEmpty {
-                Text(coordinator.gazeDebug)
-                    .font(.caption)
-                    .foregroundColor(.yellow)
-            }
-            if let result = coordinator.calibrationResult, let quality = coordinator.calibrationQuality {
-                VStack(spacing: 6) {
-                    Text(qualityLabel(for: quality))
-                        .font(.title3.bold())
-                        .foregroundColor(qualityColor(for: quality))
-                    Text(String(format: "RMSE %.2f°", result.rmseDeg))
-                        .font(.headline)
+        ZStack {
+            Color.black.ignoresSafeArea()
+            if let controller = coordinator.calibrationController {
+                GeometryReader { proxy in
+                    ZStack(alignment: .top) {
+                        StarView(controller: controller, size: proxy.size)
+                        Text("Calibration")
+                            .font(.title2.bold())
+                            .foregroundColor(.white)
+                            .padding(.top, 12)
+                            .allowsHitTesting(false)
+                    }
+                }
+            } else {
+                VStack(spacing: 12) {
+                    Text("Calibration")
+                        .font(.title2.bold())
                         .foregroundColor(.white)
-                    Text(qualityMessage(for: quality))
-                        .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.85))
-                        .multilineTextAlignment(.center)
+                    if let result = coordinator.calibrationResult, let quality = coordinator.calibrationQuality {
+                        VStack(spacing: 6) {
+                            Text(qualityLabel(for: quality))
+                                .font(.title3.bold())
+                                .foregroundColor(qualityColor(for: quality))
+                            Text(String(format: "RMSE %.2f°", result.rmseDeg))
+                                .font(.headline)
+                                .foregroundColor(.white)
+                            Text(qualityMessage(for: quality))
+                                .font(.subheadline)
+                                .foregroundColor(.white.opacity(0.85))
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding()
+                        .background(Color.black.opacity(0.5))
+                        .cornerRadius(12)
+                    }
+                    if coordinator.calibrationResult != nil {
+                        HStack(spacing: 16) {
+                            Button("Recalibrate") {
+                                coordinator.requestRecalibration()
+                            }
+                            .buttonStyle(.bordered)
+                            Button("Continue") {
+                                coordinator.continueAfterCalibration()
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(!canContinue)
+                            .opacity(canContinue ? 1 : 0.6)
+                        }
+                        .padding(.top, 12)
+                    }
                 }
                 .padding()
-                .background(Color.black.opacity(0.5))
-                .cornerRadius(12)
-            }
-            if let controller = coordinator.calibrationController {
-                VStack(alignment: .leading, spacing: 4) {
-                    ProgressView(value: controller.progress, total: 1)
-                        .tint(.white)
-                    Text(String(format: "Progress %.0f%%", controller.progress * 100))
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.8))
-                }
-                .padding(.horizontal)
-            }
-            GeometryReader { proxy in
-                ZStack {
-                    Color.black
-                    if let controller = coordinator.calibrationController {
-                        StarView(controller: controller, size: proxy.size)
-                    }
-                }
-            }
-            .padding()
-            if let status = coordinator.calibrationController?.status {
-                Text(status)
-                    .foregroundColor(.white)
-                    .padding(.top, 8)
-                if let debug = coordinator.calibrationController?.debugInfo, !debug.isEmpty {
-                    Text(debug)
-                        .font(.caption2)
-                        .foregroundColor(.yellow)
-                }
-            } else if let result = coordinator.calibrationResult {
-                VStack(spacing: 8) {
-                    Text(String(format: "Signal quality: %.2f° RMSE", result.rmseDeg))
-                        .foregroundColor(.white)
-                    if !coordinator.gazeDebug.isEmpty {
-                        Text(coordinator.gazeDebug)
-                            .font(.caption)
-                            .foregroundColor(.yellow)
-                    }
-                }
-            }
-            if coordinator.calibrationResult != nil {
-                HStack(spacing: 16) {
-                    Button("Recalibrate") {
-                        coordinator.requestRecalibration()
-                    }
-                    .buttonStyle(.bordered)
-                    Button("Continue") {
-                        coordinator.continueAfterCalibration()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(!canContinue)
-                    .opacity(canContinue ? 1 : 0.6)
-                }
-                .padding(.top, 12)
             }
         }
-        .background(Color.black.ignoresSafeArea())
     }
 
     private var canContinue: Bool {

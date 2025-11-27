@@ -49,28 +49,21 @@ public final class TrialScheduler {
 
     /// Training/practice block:
     /// - 12° step targets identical to production trials.
-    /// - Mix of GO and STOP without scoring; defaults to 6 GO / 4 STOP.
+    /// - GO-only so the STOP signal never appears during practice.
     public func trainingSchedule() -> [ScheduledTrial] {
-        var remainingGo = config.trainingGoCount
-        var remainingStop = config.trainingStopCount
-        let total = remainingGo + remainingStop
+        let total = config.trainingGoCount + config.trainingStopCount
         var trials: [ScheduledTrial] = []
-        var lastType: TrialType = .go
-        var streak = 0
         var lastDirection: TrialDirection?
         var sideStreak = 0
 
         for index in 0..<total {
-            let type = pickType(remainingGo: &remainingGo, remainingStop: &remainingStop, lastType: lastType, streak: &streak)
-            lastType = type
             let direction = pickDirection(lastDirection: &lastDirection, streak: &sideStreak)
-            let ssd = type == .stop ? randomSSD() : nil
             trials.append(ScheduledTrial(
                 index: index,
                 block: .training,
-                type: type,
+                type: .go,
                 direction: direction,
-                ssdMs: ssd
+                ssdMs: nil
             ))
         }
         return trials

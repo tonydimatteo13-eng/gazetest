@@ -218,20 +218,18 @@ public final class TrialEngine {
     }
 
     private func logTrialDebug(trial: Trial, metrics: TrialMetricsInput) {
-        let corridorSideLabel: String
-        switch metrics.corridorSide {
-        case .some(.left): corridorSideLabel = "left"
-        case .some(.right): corridorSideLabel = "right"
-        case .none: corridorSideLabel = "none"
-        }
-        let exclusionsLabel = trial.exclusions.map { $0.debugLabel }.joined(separator: ",")
+        let corridorSideLabel = metrics.corridorSide?.rawValue ?? "none"
+        let exclusionsLabel = trial.exclusions.map { "\"\($0.debugLabel)\"" }.joined(separator: ",")
         let rmse = String(format: "%.2f", metrics.gazeRMSEDeg)
         let hMin = String(format: "%.2f", metrics.horizontalMinDeg)
         let hMax = String(format: "%.2f", metrics.horizontalMaxDeg)
         let rtValue = metrics.rtMs ?? -1
+        let entryMs = metrics.corridorEntryTimeMs ?? -1
+        let entryDeg = metrics.corridorEntryHorizontalDeg.map { String(format: "%.2f", $0) } ?? "-1"
+        let viewDist = String(format: "%.1f", metrics.viewingDistanceCm)
         let valid = TrialEngine.isIncluded(trial, config: config)
         let session = sessionUID?.uuidString ?? "nil"
-        print("[TrialDebug] session=\(session) idx=\(trial.trialIndex) block=\(trial.block) type=\(trial.type) dir=\(trial.direction) rtMs=\(rtValue) enteredCorridor=\(metrics.enteredCorridor) corridorSide=\(corridorSideLabel) hMin=\(hMin) hMax=\(hMax) gazeRMSE=\(rmse) headMotion=\(metrics.headMotionFlag) lost=\(metrics.lostTrackingFlag) anticipation=\(metrics.anticipationFlag) timeout=\(metrics.timeoutFlag) isValid=\(valid) exclusions=[\(exclusionsLabel)]")
+        print("[TrialDebug] session=\(session) idx=\(trial.trialIndex) block=\(trial.block.rawValue) type=\(trial.type.rawValue) dir=\(trial.direction.rawValue) rtMs=\(rtValue) enteredCorridor=\(metrics.enteredCorridor) side=\(corridorSideLabel) entryMs=\(entryMs) entryDeg=\(entryDeg) hMin=\(hMin) hMax=\(hMax) gazeRMSE=\(rmse) viewCm=\(viewDist) head=\(metrics.headMotionFlag) lost=\(metrics.lostTrackingFlag) anticipation=\(metrics.anticipationFlag) timeout=\(metrics.timeoutFlag) isValid=\(valid) exclusions=[\(exclusionsLabel)]")
     }
 
     public static func isIncluded(_ trial: Trial, config: GameConfig) -> Bool {

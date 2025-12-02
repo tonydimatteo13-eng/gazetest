@@ -26,7 +26,8 @@ public final class FireFlyScene: SKScene {
     private var currentBlock: TrialBlock?
     private var scheduledTrial: ScheduledTrial?
     private var goStartTime: TimeInterval?
-    private var stopSignalTime: TimeInterval?
+    private var goStartSceneTime: TimeInterval?
+    private var stopSignalSceneTime: TimeInterval?
     private var fixationStartSample: TimeInterval?
     private var fixationStreak = 0
     private var trialCompleted = false
@@ -146,7 +147,7 @@ public final class FireFlyScene: SKScene {
 
     public override func update(_ currentTime: TimeInterval) {
         super.update(currentTime)
-        guard let trial = scheduledTrial, let goTime = goStartTime else {
+        guard let trial = scheduledTrial else {
             checkForLostTracking(currentTime: currentTime)
             return
         }
@@ -154,9 +155,9 @@ public final class FireFlyScene: SKScene {
         switch state {
         case .go:
             updateStopStateIfNeeded(currentTime: currentTime, trial: trial)
-            evaluateTimeout(currentTime: currentTime, goTime: goTime, trial: trial)
+            evaluateTimeout(currentTime: currentTime, trial: trial)
         case .stop:
-            evaluateTimeout(currentTime: currentTime, goTime: goTime, trial: trial)
+            evaluateTimeout(currentTime: currentTime, trial: trial)
         case .fixate, .iti, .paused, .calibrate:
             checkForLostTracking(currentTime: currentTime)
         default:
@@ -172,7 +173,8 @@ private extension FireFlyScene {
         state = .calibrate
         scheduledTrial = nil
         goStartTime = nil
-        stopSignalTime = nil
+        goStartSceneTime = nil
+        stopSignalSceneTime = nil
         fixationStartSample = nil
         fixationStreak = 0
         trialCompleted = false
@@ -221,6 +223,7 @@ private extension FireFlyScene {
         fireflyNode.run(SKAction.repeatForever(bobSequence), withKey: "idleBob")
 
         stopNode.isHidden = true
+        stopNode.alpha = 1.0
         stopNode.zPosition = 20
         owlNode.addChild(stopNode)
         stopNode.position = CGPoint(x: 0, y: 120)
@@ -283,8 +286,8 @@ private extension FireFlyScene {
     func glowAnimation() -> SKAction {
         let frames = ["firefly_idle", "firefly_glow_1", "firefly_glow_2", "firefly_glow_3"].map { SKTexture(imageNamed: $0) }
         return SKAction.sequence([
-            SKAction.animate(with: frames, timePerFrame: 0.35, resize: false, restore: false),
-            SKAction.animate(with: frames.reversed(), timePerFrame: 0.35, resize: false, restore: false)
+            SKAction.animate(with: frames, timePerFrame: 0.1, resize: false, restore: false),
+            SKAction.animate(with: frames.reversed(), timePerFrame: 0.1, resize: false, restore: false)
         ])
     }
 
@@ -462,7 +465,8 @@ private extension FireFlyScene {
         state = .go
         trialCompleted = false
         goStartTime = timestamp
-        stopSignalTime = trial.ssdMs.map { timestamp + Double($0) / 1000.0 }
+        goStartSceneTime = CACurrentMediaTime()
+        stopSignalSceneTime = trial.ssdMs.map { (goStartSceneTime ?? CACurrentMediaTime()) + Double($0) / 1000.0 }
         gazeSamples.removeAll(keepingCapacity: true)
         distanceSamples.removeAll(keepingCapacity: true)
         headMotionFlag = false
@@ -483,20 +487,16 @@ private extension FireFlyScene {
         let offset = CGFloat(targetDeg) * unitsPerDegree
         print("[Scene] presentStimulus() – targetDeg=\(targetDeg) offset=\(offset) sceneWidth=\(size.width) visibleHalfWidth=\(halfWidth)")
         fireflyNode.removeAllActions()
+        fireflyNode.texture = SKTexture(imageNamed: "firefly_idle")
         fireflyNode.position = CGPoint(x: offset, y: 0)
-        fireflyNode.setScale(0.85)
-        fireflyNode.alpha = 0
+        fireflyNode.setScale(0.9)
+        fireflyNode.alpha = 1.0
         fireflyNode.isHidden = false
-        // Keep the owl visible on STOP trials so the central STOP sign can appear,
-        // but hide it on GO trials to emphasize the peripheral step target.
-        owlNode.isHidden = (trial.type == .go)
-        let fadeIn = SKAction.fadeIn(withDuration: 0.05)
-        let scaleUp = SKAction.scale(to: 1.05, duration: 0.08).easeOut()
-        let settle = SKAction.scale(to: 1.0, duration: 0.06).easeOut()
-        let pulse = SKAction.sequence([scaleUp, settle])
-        let appear = SKAction.group([fadeIn, pulse])
-        fireflyNode.run(appear)
-        fireflyNode.run(SKAction.repeatForever(glowAnimation()))
+        // Keep the owl visible at center; STOP sign overlays it on STOP trials.
+        owlNode.isHidden = false
+        let pop = SKAction.scale(to: 1.0, duration: 0.12).easeOut()
+        fireflyNode.run(pop, withKey: "goOnset")
+        fireflyNode.run(SKAction.repeatForever(glowAnimation()), withKey: "glow")
         if fireflyNode.action(forKey: "idleBob") == nil {
             let bobUp = SKAction.moveBy(x: 0, y: 6, duration: 0.9)
             bobUp.timingMode = .easeInEaseOut
@@ -509,7 +509,7 @@ private extension FireFlyScene {
 
     func updateStopStateIfNeeded(currentTime: TimeInterval, trial: ScheduledTrial) {
         guard trial.block != .training else { return }
-        guard trial.type == .stop, let stopTime = stopSignalTime, currentTime >= stopTime else { return }
+        guard trial.type == .stop, let stopTime = stopSignalSceneTime, currentTime >= stopTime else { return }
         state = .stop
         showStopSignal()
     }
@@ -518,15 +518,11 @@ private extension FireFlyScene {
         stopNode.removeAllActions()
         owlNode.isHidden = false
         stopNode.isHidden = false
-        stopNode.alpha = 0
         stopNode.setScale(0.9)
-        let startPosition = CGPoint(x: 0, y: 90)
-        let raisedPosition = CGPoint(x: 0, y: 120)
-        stopNode.position = startPosition
-        let moveUp = SKAction.move(to: raisedPosition, duration: 0.12).easeOut()
-        let fadeIn = SKAction.fadeIn(withDuration: 0.12)
-        let appear = SKAction.group([moveUp, fadeIn, SKAction.scale(to: 1.0, duration: 0.12).easeOut()])
-        stopNode.run(appear)
+        stopNode.alpha = 1.0
+        stopNode.position = CGPoint(x: 0, y: 120)
+        let pop = SKAction.scale(to: 1.0, duration: 0.12).easeOut()
+        stopNode.run(pop)
     }
 
     func evaluateSaccade(for trial: ScheduledTrial, goTime: TimeInterval) {
@@ -534,7 +530,7 @@ private extension FireFlyScene {
         if let entry = outcome.firstEntry, !corridorEntryLogged {
             corridorEntryLogged = true
             let hString = String(format: "%.2f", entry.horizontalDeg)
-            print("[CorridorEntry] idx=\(trial.index) block=\(trial.block) type=\(trial.type) dir=\(trial.direction) tMs=\(entry.timestampMs) hDeg=\(hString)")
+            print("[CorridorEntry] idx=\(trial.index) block=\(trial.block.rawValue) type=\(trial.type.rawValue) dir=\(trial.direction.rawValue) tMs=\(entry.timestampMs) hDeg=\(hString)")
         }
         guard let rt = outcome.reactionTimeMs else { return }
         if trial.type == .go {
@@ -548,8 +544,9 @@ private extension FireFlyScene {
         }
     }
 
-    func evaluateTimeout(currentTime: TimeInterval, goTime: TimeInterval, trial: ScheduledTrial) {
-        let elapsed = (currentTime - goTime) * 1000.0
+    func evaluateTimeout(currentTime: TimeInterval, trial: ScheduledTrial) {
+        guard let goSceneTime = goStartSceneTime else { return }
+        let elapsed = (currentTime - goSceneTime) * 1000.0
         if Int(elapsed) >= config.goTimeoutMs {
             concludeTrial(reason: .timeout)
         }
@@ -592,7 +589,8 @@ private extension FireFlyScene {
             print("[Scene] advanceToNextTrial() – mode=\(modeLabel) yielded nil (no more trials)")
         }
         goStartTime = nil
-        stopSignalTime = nil
+        goStartSceneTime = nil
+        stopSignalSceneTime = nil
         fixationStartSample = nil
         fixationStreak = 0
         trialCompleted = false
@@ -626,7 +624,7 @@ private extension FireFlyScene {
 
         let averageDistance = distanceSamples.isEmpty ? 60.0 : distanceSamples.reduce(0, +) / Double(distanceSamples.count)
         let rmse = computeRMSE(for: trial)
-        let metrics = makeMetrics(trial: trial, outcome: outcome, rmse: rmse, averageDistance: averageDistance, reason: reason)
+        let metrics = makeMetrics(trial: trial, outcome: outcome, rmse: rmse, averageDistance: averageDistance, reason: reason, goTime: goTime)
         let recorded = engine.record(trial: trial, metrics: metrics)
         onTrialFinished?(recorded)
         updateFeedback(for: trial, outcome: outcome, reason: reason)
@@ -643,11 +641,12 @@ private extension FireFlyScene {
         return sqrt(mse)
     }
 
-    func makeMetrics(trial: ScheduledTrial, outcome: SaccadeOutcome, rmse: Double, averageDistance: Double, reason: TrialEndReason) -> TrialMetricsInput {
+    func makeMetrics(trial: ScheduledTrial, outcome: SaccadeOutcome, rmse: Double, averageDistance: Double, reason: TrialEndReason, goTime: TimeInterval) -> TrialMetricsInput {
         var goSuccess = trial.type == .go && outcome.enteredCorridor
         var stopSuccess = trial.type == .stop && !outcome.enteredCorridor
         var rt = outcome.reactionTimeMs
         let timeoutFlag: Bool
+        let goOnsetMs = Int(round(goTime * 1000.0))
         if trial.type == .stop {
             goSuccess = false
         }
@@ -661,7 +660,7 @@ private extension FireFlyScene {
         }
 
         return TrialMetricsInput(
-            goOnsetMs: 0,
+            goOnsetMs: goOnsetMs,
             rtMs: rt,
             goSuccess: goSuccess,
             stopSuccess: stopSuccess,

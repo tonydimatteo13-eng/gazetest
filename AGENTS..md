@@ -222,6 +222,10 @@ The task must preserve the following core scientific features from Kelly et al. 
 - Firefly remains a **step target**:
   - No continuous pursuit movement.
   - Optional short pop/ease-in animation at the new location is allowed, but no pre-trial motion cues.
+- Stimulus onset & animations:
+  - GO firefly and STOP sign must reach full contrast within at most one display frame (no long fade-ins).
+  - Optional **scale-only** pop animations (e.g., 0.9 → 1.0 over ≈120 ms) are allowed, but must not delay detectability of the stimulus.
+  - The firefly’s idle glow animation is purely cosmetic; the first frame after GO onset must already show a fully formed firefly at the target location.
 - Owl remains fixed at the center during trials.
 - STOP signal appears at the center after SSD and persists for the remainder of the trial.
 - Saccade detection, corridor logic, and integration-method SSRT estimation are unchanged in principle; only counts, scheduling, fixation tolerances, and early-stop behavior are modified for toddler feasibility.
